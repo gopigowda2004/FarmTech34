@@ -63,7 +63,8 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
      ```
 
 3. Make sure **MySQL** is running and update the `application.properties` file with your database credentials.
-
+**Create Database in MySQL**
+CREATE DATABASE FarmTech;
 ---
 
 ## Contribution
