@@ -64,6 +64,27 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
 
 3. Make sure **MySQL** is running and update the `application.properties` file with your database credentials.
 
+
+
+**Create Database in MySQL**
+
+```sql
+CREATE DATABASE FarmTech;
+
+
+
+
+spring.application.name=backend
+spring.datasource.url=jdbc:mysql://localhost:3306/FarmTech
+spring.datasource.username=root
+spring.datasource.password=root
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+server.port=8080
+
+
+
 ---
 
 ## Contribution
