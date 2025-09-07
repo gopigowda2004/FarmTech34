@@ -66,7 +66,7 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
 
 
 
-**Create Database in MySQL**
+Create Database in MySQL
 
 ```sql
 CREATE DATABASE FarmTech;
