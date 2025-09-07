@@ -73,7 +73,7 @@ Feel free to fork this repository and contribute to improving the platform. Sugg
 
 ## Contact
 - **Developer:** Gopi Gowda  
-- **Email:** naveenkumardh269@gmail.com  
+- **Email:** gopigowda132@gmail.com
 
 
 
