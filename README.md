@@ -48,7 +48,7 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
 
    - Run the application:
      
-    ``` mvn spring-boot:run
+    mvn spring-boot:run
      
 
 2. **Frontend (React)**
