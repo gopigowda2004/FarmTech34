@@ -43,24 +43,24 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
 1. **Backend (Spring Boot)**
    - Navigate to `backend/`
    - Build the project using Maven:
-     
-     ```mvn clean install
-
+     ```bash
+     mvn clean install
+     ```
    - Run the application:
-     
-    mvn spring-boot:run
-     
+     ```bash
+     mvn spring-boot:run
+     ```
 
 2. **Frontend (React)**
    - Navigate to `farmer-rental-app/`
    - Install dependencies:
-     
-     ```npm install
-     
+     ```bash
+     npm install
+     ```
    - Start the application:
-     
-    ``` npm start
-     
+     ```bash
+     npm start
+     ```
 
 3. Make sure **MySQL** is running and update the `application.properties` file with your database credentials.
 
