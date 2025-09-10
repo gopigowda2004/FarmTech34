@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: farmtech-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: FarmTech
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: farmtech-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Point Spring Boot to the mysql service
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/FarmTech
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./farmer-rental-app
+      args:
+        # Optional: override at build time if you prefer direct backend access
+        REACT_APP_API_BASE_URL: /api
+    container_name: farmtech-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  db_data:
