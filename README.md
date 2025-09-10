@@ -1,75 +1,88 @@
 # FarmTech - Farmer Equipment Rental Application
 
 ## Overview
-FarmTech is a full-stack application designed to help farmers **rent and lease agricultural equipment**. The application connects farmers with other farmers who own equipment, enabling them to **share resources efficiently** and reduce downtime caused by lack of equipment.
-
----
+FarmTech is a full-stack application designed to help farmers rent and lease agricultural equipment. The application connects farmers with other farmers who own equipment, enabling them to share resources efficiently and reduce downtime caused by lack of equipment.
 
 ## Problem
-Many farmers face difficulty in **accessing agricultural equipment on time**, which can delay farming operations and reduce productivity. Purchasing equipment individually is expensive and not always practical.
-
----
+Many farmers face difficulty in accessing agricultural equipment on time, which can delay farming operations and reduce productivity. Purchasing equipment individually is expensive and not always practical.
 
 ## Solution
 FarmTech provides a platform where farmers can:
 
-- **List their equipment** for rent.
-- **Search and rent equipment** from other farmers.
-- **Connect directly** with other farmers to coordinate rentals.
+- List their equipment for rent.
+- Search and rent equipment from other farmers.
+- Connect directly with other farmers to coordinate rentals.
 - Manage rental schedules and availability.
 
-This peer-to-peer equipment rental approach ensures **efficient use of resources** and reduces costs for farmers.
-
----
+This peer-to-peer equipment rental approach ensures efficient use of resources and reduces costs for farmers.
 
 ## Technologies Used
-- **Frontend:** React.js
-- **Backend:** Java Spring Boot
-- **Database:** MySQL
-- **Server:** Apache Tomcat
-- **Version Control:** Git & GitHub
-
----
+- **Frontend:** React.js  
+- **Backend:** Java Spring Boot  
+- **Database:** MySQL  
+- **Server:** Apache Tomcat  
+- **Containerization:** Docker & Docker Compose  
+- **Version Control:** Git & GitHub  
 
 ## Features
-1. **User Registration & Login:** Farmers can create accounts and log in securely.
-2. **Equipment Management:** Add, edit, and view available equipment.
-3. **Peer-to-Peer Rental:** Connect and rent equipment directly from other farmers.
-4. **Search & Filter:** Easily find equipment based on type, location, and availability.
+- **User Registration & Login:** Farmers can create accounts and log in securely.  
+- **Equipment Management:** Add, edit, and view available equipment.  
+- **Peer-to-Peer Rental:** Connect and rent equipment directly from other farmers.  
+- **Search & Filter:** Easily find equipment based on type, location, and availability.  
 
 ---
 
 ## How to Run
-1. **Backend (Spring Boot)**
-   - Navigate to `backend/`
-   - Build the project using Maven:
-     ```bash
-     mvn clean install
-     ```
-   - Run the application:
-     ```bash
-     mvn spring-boot:run
-     ```
 
-2. **Frontend (React)**
-   - Navigate to `farmer-rental-app/`
-   - Install dependencies:
-     ```bash
-     npm install
-     ```
-   - Start the application:
-     ```bash
-     npm start
-     ```
+### Option 1: Run without Docker
 
-3. Make sure **MySQL** is running and update the `application.properties` file with your database credentials.
-**Create Database in MySQL**
+#### Backend (Spring Boot)
+```bash
+cd backend/
+mvn clean install
+mvn spring-boot:run
+Frontend (React)
+bash
+Copy code
+cd farmer-rental-app/
+npm install
+npm start
+👉 Make sure MySQL is running and update the application.properties file with your database credentials.
+
+Create the database:
+
+sql
+Copy code
 CREATE DATABASE FarmTech;
----
+Option 2: Run with Docker (Recommended)
+This project is Dockerized using Docker Compose, which sets up the frontend, backend, and database in separate containers.
 
-## Contribution
-Feel free to fork this repository and contribute to improving the platform. Suggestions for additional features like **notifications, payment integration, and real-time availability tracking** are welcome.
+Steps:
+Ensure Docker and Docker Compose are installed on your system.
 
+From the project root, run:
+
+bash
+Copy code
+docker-compose up --build
+What happens:
+A MySQL container starts with the FarmTech database.
+
+The Spring Boot backend container builds and runs automatically.
+
+The React frontend builds and is served with Nginx.
+
+Access:
+Frontend: http://localhost:3000
+
+Backend API: http://localhost:8080
+
+To stop the containers:
+bash
+Copy code
+docker-compose down
+Contribution
+Feel free to fork this repository and contribute to improving the platform. Suggestions for additional features like notifications, payment integration, and real-time availability tracking are welcome.
 ---
 
 ## Contact
