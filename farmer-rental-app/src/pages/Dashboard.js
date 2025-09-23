@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useI18n } from "../i18n/i18n";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [farmerData, setFarmerData] = useState(null);
@@ -16,7 +19,7 @@ export default function Dashboard() {
   useEffect(() => {
     const farmerId = localStorage.getItem("farmerId");
     if (!farmerId) {
-      navigate("/"); // redirect to login if no farmerId
+      navigate("/"); // redirect to home if no farmerId
       return;
     }
 
@@ -30,23 +33,31 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("farmerId");
-    navigate("/"); // go to login
+    navigate("/");
   };
 
   return (
     <div style={styles.container}>
       {/* Sidebar */}
       <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>🌾 AgriTech</h2>
+        <h2 style={styles.logo}>{t("dashboard.logo")}</h2>
         <nav>
           <ul style={styles.navList}>
-            <li style={styles.navItem} onClick={() => setActiveTab("dashboard")}>Dashboard</li>
-            <li style={styles.navItem} onClick={() => navigate("/profile")}>Profile</li>
-            <li style={styles.navItem} onClick={() => navigate("/rent-equipment")}>Rent Equipments</li>
-            <li style={styles.navItem} onClick={() => setActiveTab("equipments")}>Manage Equipments</li>
-            <li style={styles.navItem} onClick={() => setActiveTab("bookings")}>Bookings</li>
-            <li style={styles.navItem} onClick={() => setActiveTab("stats")}>Rental Stats</li>
-            <li style={styles.navItem} onClick={handleLogout}>Logout</li>
+            <li style={styles.navItem} onClick={() => setActiveTab("dashboard")}>{t("dashboard.menu.dashboard")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/profile")}>{t("dashboard.menu.profile")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/rent-equipment")}>{t("dashboard.menu.rentEquipments")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/manage-my-equipment")}>{t("dashboard.menu.manageEquipments")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/bookings")}>{t("dashboard.menu.browseEquipments")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/my-bookings")}>{t("dashboard.menu.myBookings")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/owner-requests")}>{t("dashboard.menu.ownerRequests")}</li>
+            <li style={styles.navItem} onClick={() => setActiveTab("stats")}>{t("dashboard.menu.rentalStats")}</li>
+            <li style={{...styles.navItem, marginTop: 20, opacity: 0.8}}>{t("dashboard.menu.smartFarming")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/ml/crop-recommendation")}>{t("dashboard.menu.cropRecommendation")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/ml/fertilizer-prediction")}>{t("dashboard.menu.fertilizerPrediction")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/ml/crop-yield-estimation")}>{t("dashboard.menu.cropYieldEstimation")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/ml/soil-analysis")}>{t("dashboard.menu.soilAnalysis")}</li>
+            <li style={styles.navItem} onClick={() => navigate("/ml/plant-disease")}>{t("dashboard.menu.plantDiseaseDetection")}</li>
+            <li style={styles.navItem} onClick={handleLogout}>{t("dashboard.menu.logout")}</li>
           </ul>
         </nav>
       </aside>
@@ -54,39 +65,35 @@ export default function Dashboard() {
       {/* Main Content */}
       <main style={styles.main}>
         <header style={styles.header}>
-          <input type="text" placeholder="Search equipments..." style={styles.searchInput} />
+          <input type="text" placeholder={t("dashboard.searchPlaceholder")} style={styles.searchInput} />
           <button style={styles.searchBtn}>🔍</button>
+          <div style={{ marginLeft: 12 }}>
+            <LanguageSwitcher inline />
+          </div>
         </header>
 
         {/* Tabs */}
         {activeTab === "dashboard" && (
           <section>
             <h2 style={styles.sectionTitle}>
-              Welcome back, {farmerData ? farmerData.name : "Farmer"} 👋
+              {t("dashboard.welcome").replace("{name}", farmerData ? farmerData.name : "Farmer")}
             </h2>
-            <p>Here’s a quick look at your dashboard.</p>
+            <p>{t("dashboard.quickLook")}</p>
           </section>
         )}
 
         {activeTab === "equipments" && (
           <section>
-            <h2 style={styles.sectionTitle}>Manage Equipments</h2>
+            <h2 style={styles.sectionTitle}>{t("dashboard.menu.manageEquipments")}</h2>
             <AddEquipmentForm setEquipments={setEquipments} />
             <hr style={{ margin: "20px 0" }} />
             <EquipmentList equipments={equipments} />
           </section>
         )}
 
-        {activeTab === "bookings" && (
-          <section>
-            <h2 style={styles.sectionTitle}>Your Bookings</h2>
-            <p>No bookings yet.</p>
-          </section>
-        )}
-
         {activeTab === "stats" && (
           <section>
-            <h2 style={styles.sectionTitle}>Rental Statistics</h2>
+            <h2 style={styles.sectionTitle}>{t("dashboard.menu.rentalStats")}</h2>
             <p>Coming soon...</p>
           </section>
         )}
@@ -99,21 +106,22 @@ export default function Dashboard() {
    Add Equipment Form
 ---------------------------------*/
 function AddEquipmentForm({ setEquipments }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({ name: "", desc: "", price: "", image: "" });
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handleSubmit = (e) => {
     e.preventDefault();
     setEquipments((prev) => [...prev, form]);
     setForm({ name: "", desc: "", price: "", image: "" });
-    alert("✅ Equipment added successfully!");
+    alert(`✅ ${t("dashboard.addForm.success")}`);
   };
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
-      <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="Equipment Name" required style={styles.input} />
-      <input type="text" name="desc" value={form.desc} onChange={handleChange} placeholder="Description" required style={styles.input} />
-      <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="Price per day" required style={styles.input} />
-      <input type="text" name="image" value={form.image} onChange={handleChange} placeholder="Image URL" style={styles.input} />
-      <button type="submit" style={styles.button}>Add Equipment</button>
+      <input type="text" name="name" value={form.name} onChange={handleChange} placeholder={t("dashboard.addForm.equipmentName") } required style={styles.input} />
+      <input type="text" name="desc" value={form.desc} onChange={handleChange} placeholder={t("dashboard.addForm.description")} required style={styles.input} />
+      <input type="number" name="price" value={form.price} onChange={handleChange} placeholder={t("dashboard.addForm.pricePerDay")} required style={styles.input} />
+      <input type="text" name="image" value={form.image} onChange={handleChange} placeholder={t("dashboard.addForm.imageUrl")} style={styles.input} />
+      <button type="submit" style={styles.button}>{t("dashboard.addForm.button")}</button>
     </form>
   );
 }
@@ -122,6 +130,7 @@ function AddEquipmentForm({ setEquipments }) {
    Equipment List
 ---------------------------------*/
 function EquipmentList({ equipments }) {
+  const { t } = useI18n();
   return (
     <div style={styles.grid}>
       {equipments.map((eq, index) => (
@@ -129,8 +138,8 @@ function EquipmentList({ equipments }) {
           <img src={eq.image} alt={eq.name} style={styles.cardImage} />
           <h3>{eq.name}</h3>
           <p>{eq.desc}</p>
-          <p style={styles.price}>₹{eq.price}/day</p>
-          <button style={styles.button}>Rent Now</button>
+          <p style={styles.price}>{t("common.priceDay").replace("{price}", eq.price)}</p>
+          <button style={styles.button}>{t("btn.rentNow")}</button>
         </div>
       ))}
     </div>

@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../i18n/i18n";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const Register = () => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     aadharNumber: "",
     name: "",
@@ -21,7 +24,7 @@ const Register = () => {
   // Fetch farmer details using Aadhaar
   const handleFetchDetails = async () => {
     if (!formData.aadharNumber) {
-      alert("⚠️ Enter Aadhaar Number first!");
+      alert(`⚠️ ${t("register.alerts.enterAadhar")}`);
       return;
     }
     try {
@@ -37,7 +40,7 @@ const Register = () => {
         address: res.data.address,
       });
     } catch (err) {
-      alert("❌ Farmer not found for this Aadhaar!");
+      alert(`❌ ${t("register.alerts.farmerNotFound")}`);
     } finally {
       setLoading(false);
     }
@@ -48,25 +51,25 @@ const Register = () => {
     e.preventDefault();
     try {
       await axios.post("http://localhost:8080/api/auth/register", formData);
-      alert("✅ Registration successful!");
+      alert(`✅ ${t("register.alerts.success")}`);
       navigate("/login");
     } catch (error) {
-      alert(
-        "❌ Registration failed: " +
-          (error.response?.data?.message || "Server error")
-      );
+      alert(`❌ ${t("register.alerts.failed")}: ` + (error.response?.data?.message || "Server error"));
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.formWrapper}>
-        <h2 style={styles.heading}>Farmer Registration</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={styles.heading}>{t("register.title")}</h2>
+          <LanguageSwitcher inline />
+        </div>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
             name="aadharNumber"
-            placeholder="Aadhar Number"
+            placeholder={t("register.aadhar")}
             value={formData.aadharNumber}
             onChange={handleChange}
             style={styles.input}
@@ -78,13 +81,13 @@ const Register = () => {
             style={styles.fetchButton}
             disabled={loading}
           >
-            {loading ? "Fetching..." : "Fetch Details"}
+            {loading ? t("register.fetching") : t("register.fetchDetails")}
           </button>
 
           <input
             type="text"
             name="name"
-            placeholder="Name"
+            placeholder={t("register.name")}
             value={formData.name}
             onChange={handleChange}
             style={styles.input}
@@ -93,7 +96,7 @@ const Register = () => {
           <input
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder={t("register.email")}
             value={formData.email}
             onChange={handleChange}
             style={styles.input}
@@ -102,7 +105,7 @@ const Register = () => {
           <input
             type="text"
             name="phone"
-            placeholder="Phone Number"
+            placeholder={t("register.phone")}
             value={formData.phone}
             onChange={handleChange}
             style={styles.input}
@@ -111,7 +114,7 @@ const Register = () => {
           <input
             type="text"
             name="address"
-            placeholder="Address"
+            placeholder={t("register.address")}
             value={formData.address}
             onChange={handleChange}
             style={styles.input}
@@ -119,14 +122,14 @@ const Register = () => {
           <input
             type="password"
             name="password"
-            placeholder="Create Password"
+            placeholder={t("register.password")}
             value={formData.password}
             onChange={handleChange}
             style={styles.input}
             required
           />
           <button type="submit" style={styles.submitButton}>
-            Register
+            {t("register.register")}
           </button>
         </form>
       </div>

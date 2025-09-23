@@ -1,22 +1,28 @@
 import React from "react";
+import { useI18n } from "../i18n/i18n";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 function Equipments() {
+  const { t } = useI18n();
   const equipments = [
-    { id: 1, name: "Tractor", price: "₹1500/day" },
-    { id: 2, name: "Plough", price: "₹500/day" },
-    { id: 3, name: "Seed Drill", price: "₹800/day" },
-    { id: 4, name: "Harvester", price: "₹2500/day" },
+    { id: 1, name: t("equip.tractor.name"), price: t("common.priceDay").replace("{price}", "1500") },
+    { id: 2, name: t("equip.plough.name"), price: t("common.priceDay").replace("{price}", "500") },
+    { id: 3, name: t("equip.seedDrill.name"), price: t("common.priceDay").replace("{price}", "800") },
+    { id: 4, name: t("equip.harvester.name"), price: t("common.priceDay").replace("{price}", "2500") },
   ];
 
   return (
     <div style={styles.container}>
-      <h2>🚜 Available Equipments</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2>🚜 {t("equipmentList.title")}</h2>
+        <LanguageSwitcher inline />
+      </div>
       <div style={styles.grid}>
         {equipments.map((eq) => (
           <div key={eq.id} style={styles.card}>
             <h3>{eq.name}</h3>
             <p>{eq.price}</p>
-            <button style={styles.button}>Rent Now</button>
+            <button style={styles.button}>{t("btn.rentNow")}</button>
           </div>
         ))}
       </div>

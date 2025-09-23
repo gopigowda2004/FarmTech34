@@ -1,43 +1,61 @@
 import React, { useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../i18n/i18n";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function AddEquipment() {
+  const { t } = useI18n();
   const navigate = useNavigate();
-  const [equipment, setEquipment] = useState({
+  const farmerId = localStorage.getItem("farmerId");
+  const [form, setForm] = useState({
     name: "",
     description: "",
     pricePerDay: "",
+    pricePerHour: "",
     imageUrl: "",
-    farmerName: localStorage.getItem("farmerName") || "Unknown Farmer",
-    farmerEmail: localStorage.getItem("farmerEmail") || "N/A",
-    farmerPhone: localStorage.getItem("farmerPhone") || "N/A",
   });
 
   const handleChange = (e) => {
-    setEquipment({ ...equipment, [e.target.name]: e.target.value });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await axiosInstance.post("/equipments/add", equipment);
-    alert("Equipment added successfully!");
-    navigate("/equipment/list");
+    if (!farmerId) {
+      alert(t("addEquipment.alerts.missingFarmer"));
+      return;
+    }
+    const payload = {
+      name: form.name,
+      description: form.description,
+      price: Number(form.pricePerDay), // per-day price expected as 'price'
+      pricePerHour: form.pricePerHour ? Number(form.pricePerHour) : null,
+      image: form.imageUrl,
+    };
+    await axiosInstance.post(`/equipments/add`, payload, { params: { farmerId } });
+    alert(t("dashboard.addForm.success"));
+    navigate("/equipment-list");
   };
 
   return (
     <div style={styles.container}>
-      <h2>Add New Equipment</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2>{t("addEquipment.title")}</h2>
+        <LanguageSwitcher inline />
+      </div>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <input type="text" name="name" placeholder="Equipment Name"
-          value={equipment.name} onChange={handleChange} required style={styles.input}/>
-        <textarea name="description" placeholder="Description"
-          value={equipment.description} onChange={handleChange} required style={styles.textarea}/>
-        <input type="number" name="pricePerDay" placeholder="Price Per Day"
-          value={equipment.pricePerDay} onChange={handleChange} required style={styles.input}/>
-        <input type="text" name="imageUrl" placeholder="Image URL"
-          value={equipment.imageUrl} onChange={handleChange} required style={styles.input}/>
-        <button type="submit" style={styles.button}>Add Equipment</button>
+        <input type="text" name="name" placeholder={t("addEquipment.fields.name")}
+          value={form.name} onChange={handleChange} required style={styles.input}/>
+        <textarea name="description" placeholder={t("addEquipment.fields.description")}
+          value={form.description} onChange={handleChange} required style={styles.textarea}/>
+        <input type="number" name="pricePerDay" placeholder={t("addEquipment.fields.pricePerDay")}
+          value={form.pricePerDay} onChange={handleChange} required style={styles.input}/>
+        <input type="number" name="pricePerHour" placeholder={t("addEquipment.fields.pricePerHour")}
+          value={form.pricePerHour} onChange={handleChange} style={styles.input}/>
+        <input type="text" name="imageUrl" placeholder={t("addEquipment.fields.imageUrl")}
+          value={form.imageUrl} onChange={handleChange} required style={styles.input}/>
+        <button type="submit" style={styles.button}>{t("addEquipment.button")}</button>
       </form>
     </div>
   );

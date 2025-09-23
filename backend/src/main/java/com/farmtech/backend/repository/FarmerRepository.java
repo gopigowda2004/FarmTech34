@@ -6,4 +6,5 @@ import java.util.Optional;
 
 public interface FarmerRepository extends JpaRepository<Farmer, Long> {
     Optional<Farmer> findByPhone(String phone);
+    Optional<Farmer> findByAadharNumber(String aadharNumber);
 }

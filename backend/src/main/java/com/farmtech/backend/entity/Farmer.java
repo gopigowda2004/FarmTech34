@@ -1,5 +1,6 @@
 package com.farmtech.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,6 +14,7 @@ public class Farmer {
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore // Do not expose passwords in API responses
     private String password;
 
     @Column(unique = true, nullable = false)
@@ -42,6 +44,9 @@ public class Farmer {
         this.email = email;
     }
 
+    @Column(unique = true)
+    private String aadharNumber;
+
     public String getPassword() {
         return password;
     }
@@ -54,6 +59,13 @@ public class Farmer {
     }
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getAadharNumber() {
+        return aadharNumber;
+    }
+    public void setAadharNumber(String aadharNumber) {
+        this.aadharNumber = aadharNumber;
     }
 
     public String getAddress() {

@@ -12,12 +12,37 @@ public class Equipment {
 
     private String name;
     private String description;
-    private double price;
+
+    // Price per day (existing column)
+    @Column(name = "price_per_day")
+    private double price; // per-day
+
+    // New: price per hour (optional)
+    @Column(name = "price_per_hour")
+    private Double pricePerHour; // nullable for old rows
+
+    // Legacy column still present in DB (NOT NULL). Keep it in sync to avoid insert errors.
+    @Column(name = "price")
+    private Double legacyPrice;
+
     private String image;
 
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
     private Farmer owner; // Link to Farmer entity
+
+    // Keep legacy column in sync for compatibility with existing schema
+    @PrePersist
+    public void prePersist() {
+        if (legacyPrice == null) {
+            legacyPrice = price;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        legacyPrice = price;
+    }
 
     // ✅ Getters & Setters
     public Long getId() {
@@ -46,6 +71,13 @@ public class Equipment {
     }
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public Double getPricePerHour() {
+        return pricePerHour;
+    }
+    public void setPricePerHour(Double pricePerHour) {
+        this.pricePerHour = pricePerHour;
     }
 
     public String getImage() {

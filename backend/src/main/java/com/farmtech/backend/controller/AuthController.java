@@ -22,6 +22,9 @@ public class AuthController {
         if (farmerRepository.findByPhone(farmer.getPhone()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Phone already registered"));
         }
+        if (farmer.getAadharNumber() != null && farmerRepository.findByAadharNumber(farmer.getAadharNumber()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Aadhaar already registered"));
+        }
         Farmer savedFarmer = farmerRepository.save(farmer);
         return ResponseEntity.ok(Map.of(
                 "message", "Registration successful",

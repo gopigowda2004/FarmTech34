@@ -1,52 +1,52 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../i18n/i18n";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 function HomePage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <div style={styles.container}>
       {/* Navbar */}
       <nav style={styles.navbar}>
-        <h2 style={styles.logo}>AgriTech.</h2>
+        <h2 style={styles.logo}>{t("app.name")}</h2>
         <ul style={styles.navLinks}>
-          <li>Home</li>
-          <li>About</li>
-          <li>Tools</li>
-          <li>Resources</li>
-          <li>Community</li>
-          <li>Contact</li>
+          <li>{t("nav.home")}</li>
+          <li>{t("nav.about")}</li>
+          <li>{t("nav.tools")}</li>
+          <li>{t("nav.resources")}</li>
+          <li>{t("nav.community")}</li>
+          <li>{t("nav.contact")}</li>
         </ul>
-        <div style={styles.navButtons}>
-          <button style={styles.loginBtn} onClick={() => navigate("/login")}>
-            Login
-          </button>
-          <button style={styles.signUpBtn} onClick={() => navigate("/register")}>
-            Sign Up
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LanguageSwitcher inline />
+          <div style={styles.navButtons}>
+            <button style={styles.loginBtn} onClick={() => navigate("/login")}>
+              {t("btn.login")}
+            </button>
+            <button style={styles.signUpBtn} onClick={() => navigate("/register")}>
+              {t("btn.signup")}
+            </button>
+          </div>
         </div>
       </nav>
 
       {/* Hero Section */}
       <section style={styles.hero}>
         <div style={styles.heroOverlay}>
-          <h1 style={styles.heroTitle}>
-            Empowering Agriculture for a Sustainable Future
-          </h1>
-          <p style={styles.heroText}>
-            Honor the traditions of farming while embracing modern innovations.
-            Our platform offers a balanced approach, combining time-tested methods
-            with cutting-edge technologies to help you achieve optimal results.
-          </p>
+          <h1 style={styles.heroTitle}>{t("hero.title")}</h1>
+          <p style={styles.heroText}>{t("hero.text")}</p>
           <div>
             <button style={styles.ctaBtn} onClick={() => navigate("/register")}>
-              Join Now →
+              {t("btn.joinNow")}
             </button>
             <button
               style={styles.ctaBtnOutline}
               onClick={() => navigate("/about")}
             >
-              Learn More
+              {t("btn.learnMore")}
             </button>
           </div>
         </div>
@@ -78,7 +78,7 @@ function HomePage() {
 
       {/* Our Story */}
       <section style={styles.story}>
-        <h2>Our Story</h2>
+        <h2>{t("sections.ourStoryTitle")}</h2>
         <p>
           Agriculture is the backbone of our world, providing essential
           resources and sustaining communities. At <b>AgriTech</b>, we are
@@ -90,7 +90,7 @@ function HomePage() {
 
       {/* Why Choose Us */}
       <section style={styles.why}>
-        <h2>Why Choose AgriTech?</h2>
+        <h2>{t("sections.whyTitle")}</h2>
         <div style={styles.cards}>
           <div style={styles.card}>
             <h3>🌦 Weather Forecast Tool</h3>
@@ -132,16 +132,16 @@ function HomePage() {
       {/* CTA Banner */}
       <section style={styles.ctaBanner}>
         <div style={styles.ctaOverlay}>
-          <h2>Join Our Farming Community Today</h2>
+          <h2>{t("sections.ctaBannerTitle")}</h2>
           <button style={styles.ctaBtn} onClick={() => navigate("/register")}>
-            Get Started
+            {t("btn.getStarted")}
           </button>
         </div>
       </section>
 
       {/* Footer */}
       <footer style={styles.footer}>
-        <p>© 2025 AgriTech. All Rights Reserved.</p>
+        <p>© 2025 AgriTech. {t("sections.footerRights")}</p>
         <p>Contact: info@agritech.com</p>
       </footer>
     </div>

@@ -67,6 +67,45 @@ This peer-to-peer equipment rental approach ensures **efficient use of resources
 CREATE DATABASE FarmTech;
 ---
 
+## Run with Docker
+
+- **Prerequisite**: Install Docker Desktop and ensure it is running.
+
+### Quick start
+1. From the project root, start all services:
+   ```powershell
+   Set-Location "c:\Users\gopig\OneDrive\Documents\34\FarmTech"; docker compose up --build
+   ```
+2. Open the apps:
+   - **Frontend**: http://localhost:3000
+   - **Backend**: http://localhost:8080
+   - **MySQL**: localhost:3306 (Database: `FarmTech`, User: `root`, Password: `root`)
+
+### What’s included
+- **MySQL 8** initialized with database `FarmTech`.
+- **Spring Boot backend** (Java 17) connecting to MySQL via service name `mysql`.
+- **React frontend** served by Nginx; requests to `/api` are proxied to the backend.
+
+### Configuration notes
+- Backend datasource is set by environment variables in `docker-compose.yml`:
+  - `SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/FarmTech`
+  - `SPRING_DATASOURCE_USERNAME=root`, `SPRING_DATASOURCE_PASSWORD=root`
+- Frontend builds with optional `REACT_APP_API_BASE_URL` (defaults to `/api`), so no change is needed for Docker runs.
+
+### Useful commands
+- Stop all containers:
+  ```powershell
+  docker compose down
+  ```
+- Rebuild images without cache:
+  ```powershell
+  docker compose build --no-cache
+  ```
+- Tail backend logs:
+  ```powershell
+  docker compose logs -f backend
+  ```
+
 ## Contribution
 Feel free to fork this repository and contribute to improving the platform. Suggestions for additional features like **notifications, payment integration, and real-time availability tracking** are welcome.
 

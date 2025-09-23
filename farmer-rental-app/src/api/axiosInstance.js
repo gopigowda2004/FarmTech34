@@ -1,8 +1,9 @@
 import axios from "axios";
 
 // Prefer environment variable so Docker/Compose can control the API base URL
-// Fallback to "/api" which is proxied by Nginx in container; local dev still works if backend runs on 8080
-const baseURL = process.env.REACT_APP_API_BASE_URL || "/api";
+// Local dev fallback: if running on localhost, use Spring Boot at 8080; otherwise use "/api" (for Docker/Nginx)
+const baseURL = process.env.REACT_APP_API_BASE_URL
+  || (typeof window !== "undefined" && window.location.hostname === "localhost" ? "http://localhost:8080/api" : "/api");
 
 const axiosInstance = axios.create({
   baseURL,

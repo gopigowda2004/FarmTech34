@@ -25,4 +25,12 @@ public class FarmerController {
         }
         return ResponseEntity.status(404).body("Farmer not found");
     }
+
+    // ✅ Fetch by Aadhaar
+    @GetMapping("/fetch/{aadhar}")
+    public ResponseEntity<?> fetchByAadhar(@PathVariable("aadhar") String aadharNumber) {
+        return farmerRepository.findByAadharNumber(aadharNumber)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(404).body("Farmer not found for this Aadhaar"));
+    }
 }
