@@ -16,6 +16,7 @@ const Register = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [locked, setLocked] = useState(false); // lock fields after Aadhaar fetch (Flipkart-style)
   const navigate = useNavigate();
 
   const handleChange = (e) =>
@@ -39,8 +40,10 @@ const Register = () => {
         phone: res.data.phone,
         address: res.data.address,
       });
+      setLocked(true); // lock fields once details are fetched
     } catch (err) {
       alert(`❌ ${t("register.alerts.farmerNotFound")}`);
+      setLocked(false);
     } finally {
       setLoading(false);
     }
@@ -65,6 +68,13 @@ const Register = () => {
           <h2 style={styles.heading}>{t("register.title")}</h2>
           <LanguageSwitcher inline />
         </div>
+
+        {locked && (
+          <div style={styles.banner}>
+            Details fetched via Aadhaar. Name, email, phone, and address are locked (Flipkart-style).
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -90,8 +100,9 @@ const Register = () => {
             placeholder={t("register.name")}
             value={formData.name}
             onChange={handleChange}
-            style={styles.input}
+            style={{ ...styles.input, ...(locked ? styles.disabledInput : {}) }}
             required
+            disabled={locked}
           />
           <input
             type="email"
@@ -99,8 +110,9 @@ const Register = () => {
             placeholder={t("register.email")}
             value={formData.email}
             onChange={handleChange}
-            style={styles.input}
+            style={{ ...styles.input, ...(locked ? styles.disabledInput : {}) }}
             required
+            disabled={locked}
           />
           <input
             type="text"
@@ -108,8 +120,9 @@ const Register = () => {
             placeholder={t("register.phone")}
             value={formData.phone}
             onChange={handleChange}
-            style={styles.input}
+            style={{ ...styles.input, ...(locked ? styles.disabledInput : {}) }}
             required
+            disabled={locked}
           />
           <input
             type="text"
@@ -117,7 +130,8 @@ const Register = () => {
             placeholder={t("register.address")}
             value={formData.address}
             onChange={handleChange}
-            style={styles.input}
+            style={{ ...styles.input, ...(locked ? styles.disabledInput : {}) }}
+            disabled={locked}
           />
           <input
             type="password"
@@ -161,12 +175,25 @@ const styles = {
     fontSize: "24px",
     color: "#2c3e50",
   },
+  banner: {
+    marginBottom: 12,
+    padding: "10px 12px",
+    background: "#fff7e6", // light amber (Flipkart-like)
+    border: "1px solid #ffe8b3",
+    color: "#8a6d3b",
+    borderRadius: 8,
+    fontSize: 13,
+  },
   input: {
     width: "100%",
     padding: "12px",
     marginBottom: "12px",
     borderRadius: "8px",
     border: "1px solid #ccc",
+  },
+  disabledInput: {
+    backgroundColor: "#f5f5f5",
+    cursor: "not-allowed",
   },
   fetchButton: {
     width: "100%",

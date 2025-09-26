@@ -11,6 +11,7 @@ public class Equipment {
     private Long id;
 
     private String name;
+    private String type; // e.g., "Tractor", "Harvester"
     private String description;
 
     // Price per day (existing column)
@@ -57,6 +58,13 @@ public class Equipment {
     }
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getDescription() {

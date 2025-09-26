@@ -1,6 +1,6 @@
 package com.farmtech.backend.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,7 +14,7 @@ public class Farmer {
     private String email;
 
     @Column(nullable = false)
-    @JsonIgnore // Do not expose passwords in API responses
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // Accept on input, hide on output
     private String password;
 
     @Column(unique = true, nullable = false)

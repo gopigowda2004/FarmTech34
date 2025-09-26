@@ -10,7 +10,7 @@ export default function Payment() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const equipmentId = Number(searchParams.get("equipmentId"));
+  const equipmentType = searchParams.get("equipmentType");
   const start = searchParams.get("start"); // YYYY-MM-DD
   const hours = Number(searchParams.get("hours"));
   const locationText = location.state?.locationText || "";
@@ -28,24 +28,44 @@ export default function Payment() {
   const [toastMsg, setToastMsg] = useState("");
   const [toastSeverity, setToastSeverity] = useState("success"); // success | error | info | warning
 
+  // Predefined equipment list
+  const equipments = useMemo(
+    () => [
+      { id: "tractor", nameEn: "Tractor", descEn: "Powerful tractor suitable for plowing, tilling, and hauling.", pricePerHour: 800 },
+      { id: "harvester", nameEn: "Harvester", descEn: "Efficient harvester for cutting and threshing crops.", pricePerHour: 1000 },
+      { id: "rotavator", nameEn: "Rotavator", descEn: "Used for seedbed preparation and soil conditioning.", pricePerHour: 400 },
+      { id: "plough", nameEn: "Plough", descEn: "Used for primary tillage to loosen and turn the soil.", pricePerHour: 150 },
+      { id: "seedDrill", nameEn: "Seed Drill", descEn: "For precise sowing of seeds in rows with proper depth.", pricePerHour: 200 },
+      { id: "sprayer", nameEn: "Sprayer", descEn: "Used for spraying pesticides, herbicides, and fertilizers.", pricePerHour: 50 },
+      { id: "cultivator", nameEn: "Cultivator", descEn: "Used for secondary tillage and soil preparation.", pricePerHour: 200 },
+      { id: "powerTiller", nameEn: "Power Tiller", descEn: "Compact machine for plowing, weeding, and small farm operations.", pricePerHour: 300 },
+      { id: "discHarrow", nameEn: "Disc Harrow", descEn: "Used for breaking clods, mixing soil, and weed control.", pricePerHour: 250 },
+      { id: "riceTransplanter", nameEn: "Rice Transplanter", descEn: "Specialized machine for transplanting rice seedlings into paddy fields.", pricePerHour: 400 },
+      { id: "thresher", nameEn: "Threshing Machine", descEn: "Separates grain from stalks and husks efficiently.", pricePerHour: 1200 },
+      { id: "waterPump", nameEn: "Water Pump", descEn: "Irrigation equipment for pumping water into fields.", pricePerHour: 90 },
+    ],
+    []
+  );
+
   useEffect(() => {
     if (!farmerId) {
       navigate("/");
       return;
     }
-    if (!equipmentId || !start || !hours || hours <= 0) {
+    if (!equipmentType || !start || !hours || hours <= 0) {
       setError("Missing booking details. Please start again.");
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    api
-      .get(`/equipments/${equipmentId}`)
-      .then((res) => setEquipment(res.data))
-      .catch((err) => setError(err?.response?.data || err.message || "Failed to load equipment"))
-      .finally(() => setLoading(false));
-  }, [equipmentId, start, hours, farmerId, navigate]);
+    const selectedEq = equipments.find((eq) => eq.id === equipmentType);
+    if (selectedEq) {
+      setEquipment(selectedEq);
+    } else {
+      setError("Equipment type not found.");
+    }
+    setLoading(false);
+  }, [equipmentType, start, hours, farmerId, navigate, equipments]);
 
   const pricePerHour = useMemo(() => equipment?.pricePerHour ?? null, [equipment]);
   const totalPrice = useMemo(() => (pricePerHour ? Math.round(pricePerHour * hours) : null), [pricePerHour, hours]);
@@ -59,7 +79,7 @@ export default function Payment() {
         return;
       }
       await api.post(`/bookings/create`, null, {
-        params: { equipmentId, renterId: farmerId, startDate: start, hours, location: locationText },
+        params: { equipmentType, renterId: farmerId, startDate: start, hours, location: locationText },
       });
       setToastSeverity("success");
       setToastMsg("Booking confirmed (Cash on Delivery)!");
@@ -90,7 +110,7 @@ export default function Payment() {
       <div style={styles.card}>
         <div style={styles.section}>
           <h3 style={styles.sectionTitle}>Order Summary</h3>
-          <div><strong>Equipment:</strong> {equipment?.name}</div>
+          <div><strong>Equipment:</strong> {equipment?.nameEn}</div>
           <div><strong>Start date:</strong> {start}</div>
           <div><strong>Hours:</strong> {hours}</div>
           <div><strong>Total:</strong> {totalPrice ? `₹${totalPrice}` : "—"}</div>

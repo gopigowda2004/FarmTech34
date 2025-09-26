@@ -1,23 +1,4 @@
 # FarmTech - Farmer Equipment Rental Application
-
-## Overview
-FarmTech is a full-stack application designed to help farmers **rent and lease agricultural equipment**. The application connects farmers with other farmers who own equipment, enabling them to **share resources efficiently** and reduce downtime caused by lack of equipment.
-
----
-
-## Problem
-Many farmers face difficulty in **accessing agricultural equipment on time**, which can delay farming operations and reduce productivity. Purchasing equipment individually is expensive and not always practical.
-
----
-
-## Solution
-FarmTech provides a platform where farmers can:
-
-- **List their equipment** for rent.
-- **Search and rent equipment** from other farmers.
-- **Connect directly** with other farmers to coordinate rentals.
-- Manage rental schedules and availability.
-
 This peer-to-peer equipment rental approach ensures **efficient use of resources** and reduces costs for farmers.
 
 ---

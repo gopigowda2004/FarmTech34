@@ -33,7 +33,7 @@ const RentEquipment = () => {
         tKey: "equip.harvester",
         nameEn: "Harvester",
         descEn: "Efficient harvester for cutting and threshing crops.",
-        pricePerHour: 300,
+        pricePerHour: 1000,
         image: "/images/harvester.jpg",
       },
       {
@@ -41,7 +41,7 @@ const RentEquipment = () => {
         tKey: "equip.rotavator",
         nameEn: "Rotavator",
         descEn: "Used for seedbed preparation and soil conditioning.",
-        pricePerHour: 150,
+        pricePerHour: 400,
         image: "/images/rotavator.jpg",
       },
       {
@@ -49,7 +49,7 @@ const RentEquipment = () => {
         tKey: "equip.plough",
         nameEn: "Plough",
         descEn: "Used for primary tillage to loosen and turn the soil.",
-        pricePerHour: 120,
+        pricePerHour: 150,
         image: "/images/plough.jpg",
       },
       {
@@ -57,7 +57,7 @@ const RentEquipment = () => {
         tKey: "equip.seedDrill",
         nameEn: "Seed Drill",
         descEn: "For precise sowing of seeds in rows with proper depth.",
-        pricePerHour: 100,
+        pricePerHour: 200,
         image: "/images/seed-drill.jpg",
       },
       {
@@ -65,7 +65,7 @@ const RentEquipment = () => {
         tKey: "equip.sprayer",
         nameEn: "Sprayer",
         descEn: "Used for spraying pesticides, herbicides, and fertilizers.",
-        pricePerHour: 80,
+        pricePerHour: 50,
         image: "/images/sprayer.jpg",
       },
       {
@@ -73,23 +73,16 @@ const RentEquipment = () => {
         tKey: "equip.cultivator",
         nameEn: "Cultivator",
         descEn: "Used for secondary tillage and soil preparation.",
-        pricePerHour: 110,
+        pricePerHour: 200,
         image: "/images/cultivator.jpg",
       },
-      {
-        id: "baler",
-        tKey: "equip.baler",
-        nameEn: "Baler",
-        descEn: "For compressing cut crops like hay or straw into compact bales.",
-        pricePerHour: 250,
-        image: "/images/baler.jpg",
-      },
+      
       {
         id: "powerTiller",
         tKey: "equip.powerTiller",
         nameEn: "Power Tiller",
         descEn: "Compact machine for plowing, weeding, and small farm operations.",
-        pricePerHour: 140,
+        pricePerHour: 300,
         image: "/images/power-tiller.jpg",
       },
       {
@@ -97,7 +90,7 @@ const RentEquipment = () => {
         tKey: "equip.discHarrow",
         nameEn: "Disc Harrow",
         descEn: "Used for breaking clods, mixing soil, and weed control.",
-        pricePerHour: 130,
+        pricePerHour: 250,
         image: "/images/disc-harrow.jpg",
       },
       {
@@ -106,7 +99,7 @@ const RentEquipment = () => {
         nameEn: "Rice Transplanter",
         descEn:
           "Specialized machine for transplanting rice seedlings into paddy fields.",
-        pricePerHour: 220,
+        pricePerHour: 400,
         image: "/images/rice-transplanter.jpg",
       },
       {
@@ -114,7 +107,7 @@ const RentEquipment = () => {
         tKey: "equip.thresher",
         nameEn: "Threshing Machine",
         descEn: "Separates grain from stalks and husks efficiently.",
-        pricePerHour: 240,
+        pricePerHour: 1200,
         image: "/images/thresher.jpg",
       },
       {
