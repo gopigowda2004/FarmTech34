@@ -9,12 +9,45 @@ export default function EquipmentsList() {
   const navigate = useNavigate();
   const [equipments, setEquipments] = useState([]);
   const farmerId = localStorage.getItem("farmerId");
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    api.get(`/equipments/others/${farmerId}`)
-      .then((res) => setEquipments(res.data))
-      .catch((err) => console.error("Error fetching equipments:", err));
-  }, [farmerId]);
+    console.log("🔄 EquipmentList - farmerId:", farmerId, "userId:", userId);
+    
+    // Check authentication
+    if (!farmerId && !userId) {
+      console.log("❌ No authentication found, redirecting to home");
+      navigate("/");
+      return;
+    }
+    
+    // Fetch equipment based on farmerId availability
+    const fetchEquipments = async () => {
+      try {
+        let response;
+        if (farmerId) {
+          console.log("✅ Fetching equipment for farmerId:", farmerId);
+          response = await api.get(`/equipments/others/${farmerId}`);
+        } else {
+          console.log("⚠️ No farmerId, fetching all equipment");
+          response = await api.get("/equipments");
+        }
+        setEquipments(response.data);
+        console.log("✅ Equipment fetched:", response.data.length, "items");
+      } catch (err) {
+        console.error("❌ Error fetching equipments:", err);
+        // Fallback to all equipment
+        try {
+          const fallbackResponse = await api.get("/equipments");
+          setEquipments(fallbackResponse.data);
+        } catch (fallbackErr) {
+          console.error("❌ Fallback fetch also failed:", fallbackErr);
+        }
+      }
+    };
+    
+    fetchEquipments();
+  }, [farmerId, userId, navigate]);
 
   return (
     <div>
@@ -32,7 +65,16 @@ export default function EquipmentsList() {
             <p><strong>{t("common.owner")}:</strong> {eq.owner?.name}</p>
             <p><strong>{t("common.contact")}:</strong> {eq.owner?.phone}</p>
             <button onClick={() => {
-              const renterId = localStorage.getItem("farmerId");
+              // Use farmerId if available, otherwise fall back to userId
+              const farmerId = localStorage.getItem("farmerId");
+              const userId = localStorage.getItem("userId");
+              const renterId = farmerId || userId;
+              
+              if (!renterId) {
+                alert("Authentication error. Please log in again.");
+                return;
+              }
+              
               const startDate = prompt("Start time (YYYY-MM-DDTHH:mm)", "2025-09-13T10:00");
               const hoursStr = prompt("How many hours?", "4");
               const hours = hoursStr ? parseInt(hoursStr, 10) : NaN;
@@ -41,11 +83,20 @@ export default function EquipmentsList() {
               const start = new Date(startDate);
               if (isNaN(start.getTime())) return;
               const startDateOnly = start.toISOString().slice(0, 10);
+              
+              console.log("🔄 Creating booking with renterId:", renterId, "(farmerId:", farmerId, "userId:", userId, ")");
+              
               api.post(`/bookings/create`, null, {
                 params: { equipmentId: eq.id, renterId, startDate: startDateOnly, hours },
               })
-                .then(() => navigate(`/checkout?equipmentId=${eq.id}&start=${startDateOnly}&hours=${hours}`))
-                .catch(() => alert("Failed to proceed to checkout"));
+                .then(() => {
+                  console.log("✅ Booking created, navigating to checkout");
+                  navigate(`/checkout?equipmentId=${eq.id}&start=${startDateOnly}&hours=${hours}&price=${eq.price}`);
+                })
+                .catch((err) => {
+                  console.error("❌ Failed to create booking:", err?.response?.data || err.message);
+                  alert("Failed to proceed to checkout");
+                });
             }}>{t("equipmentList.book")}</button>
           </div>
         ))}

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -21,19 +22,25 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public boolean existsByAadhar(String aadhar) {
-        return userRepository.existsByAadhar(aadhar);
-    }
+    // Removed existsByAadhar method as Aadhar is no longer used
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
 
-    public User findByPhone(String phone) {
+    public Optional<User> findByPhone(String phone) {
         return userRepository.findByPhone(phone);
     }
 
-    public User findByEmail(String email) {   // 👈 added
+    public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
+    
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
     }
 }

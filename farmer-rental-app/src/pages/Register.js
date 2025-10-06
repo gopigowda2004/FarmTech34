@@ -31,7 +31,7 @@ const Register = () => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `http://localhost:8080/api/farmers/fetch/${formData.aadharNumber}`
+        `http://localhost:8090/api/farmers/fetch/${formData.aadharNumber}`
       );
       setFormData({
         ...formData,
@@ -53,7 +53,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8080/api/auth/register", formData);
+      await axios.post("http://localhost:8090/api/auth/register", formData);
       alert(`✅ ${t("register.alerts.success")}`);
       navigate("/login");
     } catch (error) {

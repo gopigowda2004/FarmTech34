@@ -22,6 +22,12 @@ public class Farmer {
 
     private String address;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     // ✅ Getters and Setters
     public Long getId() {
         return id;
@@ -44,9 +50,6 @@ public class Farmer {
         this.email = email;
     }
 
-    @Column(unique = true)
-    private String aadharNumber;
-
     public String getPassword() {
         return password;
     }
@@ -61,17 +64,24 @@ public class Farmer {
         this.phone = phone;
     }
 
-    public String getAadharNumber() {
-        return aadharNumber;
-    }
-    public void setAadharNumber(String aadharNumber) {
-        this.aadharNumber = aadharNumber;
-    }
-
     public String getAddress() {
         return address;
     }
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 }

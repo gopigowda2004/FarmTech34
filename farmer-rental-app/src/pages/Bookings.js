@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axiosInstance";
 import { useI18n } from "../i18n/i18n";
@@ -12,29 +12,9 @@ export default function Bookings() {
   const [locationText, setLocationText] = useState("");
   const [gettingLocation, setGettingLocation] = useState(false);
   const navigate = useNavigate();
+  const [loginTimestamp, setLoginTimestamp] = useState(localStorage.getItem("loginTimestamp"));
 
-  const farmerId = localStorage.getItem("farmerId");
-
-  // Predefined equipment list for selection
-  const equipmentTypes = useMemo(
-    () => [
-      { id: "tractor", nameEn: "Tractor", tKey: "equip.tractor" },
-      { id: "harvester", nameEn: "Harvester", tKey: "equip.harvester" },
-      { id: "rotavator", nameEn: "Rotavator", tKey: "equip.rotavator" },
-      { id: "plough", nameEn: "Plough", tKey: "equip.plough" },
-      { id: "seedDrill", nameEn: "Seed Drill", tKey: "equip.seedDrill" },
-      { id: "sprayer", nameEn: "Sprayer", tKey: "equip.sprayer" },
-      { id: "cultivator", nameEn: "Cultivator", tKey: "equip.cultivator" },
-      { id: "powerTiller", nameEn: "Power Tiller", tKey: "equip.powerTiller" },
-      { id: "discHarrow", nameEn: "Disc Harrow", tKey: "equip.discHarrow" },
-      { id: "riceTransplanter", nameEn: "Rice Transplanter", tKey: "equip.riceTransplanter" },
-      { id: "thresher", nameEn: "Threshing Machine", tKey: "equip.thresher" },
-      { id: "waterPump", nameEn: "Water Pump", tKey: "equip.waterPump" },
-    ],
-    []
-  );
-
-  const [selectedEquipmentType, setSelectedEquipmentType] = useState("");
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [hours, setHours] = useState("");
 
@@ -105,37 +85,145 @@ export default function Bookings() {
   };
 
   useEffect(() => {
-    if (!farmerId) {
+    // Update loginTimestamp state if it changed in localStorage
+    const currentTimestamp = localStorage.getItem("loginTimestamp");
+    if (currentTimestamp !== loginTimestamp) {
+      console.log("🔄 Login timestamp changed in Bookings, updating state");
+      setLoginTimestamp(currentTimestamp);
+    }
+    
+    // Read farmerId and userId fresh from localStorage
+    const farmerId = localStorage.getItem("farmerId");
+    const userId = localStorage.getItem("userId");
+    
+    // Only redirect if BOTH farmerId and userId are missing (truly not logged in)
+    if (!farmerId && !userId) {
+      console.log("❌ No farmerId or userId found in Bookings, redirecting to login");
       navigate("/");
       return;
     }
-    // No need to fetch equipments anymore, as we're changing the flow
-    setLoading(false);
-  }, [farmerId, navigate]);
+    
+    // If we have userId but no farmerId, we might be a new user - continue anyway
+    if (!farmerId && userId) {
+      console.log("⚠️ New user system detected (userId but no farmerId), continuing...");
+    }
+
+    console.log("🔄 Fetching equipment for farmerId:", farmerId, "userId:", userId);
+    
+    // Clear equipment when user changes
+    console.log("🧹 Clearing equipment for fresh fetch");
+    setEquipments([]);
+    setError("");
+
+    // Fetch equipment available for rent (excluding user's own equipment)
+    const fetchEquipmentForRenter = async () => {
+      try {
+        // First try the dedicated endpoint for other farmers' equipment (only if farmerId exists)
+        if (farmerId) {
+          const response = await api.get(`/equipments/others/${farmerId}`);
+          const equipmentList = response.data || [];
+          
+          console.log("✅ Equipment fetched:", equipmentList.length, "items");
+          
+          if (equipmentList.length > 0) {
+            setEquipments(equipmentList);
+            setLoading(false);
+            return;
+          }
+        } else {
+          console.log("⚠️ No farmerId, skipping /equipments/others endpoint");
+        }
+      } catch (err) {
+        console.error("❌ Error fetching other farmers' equipment:", err);
+      }
+      
+      // Fallback: fetch all equipment and filter manually
+      try {
+        const response = await api.get(`/equipments`);
+        const allEquipment = response.data || [];
+        
+        if (allEquipment.length === 0) {
+          setError("No equipment available to rent right now. Please try again later.");
+          setLoading(false);
+          return;
+        }
+        
+        // For renters, show all equipment since they typically don't own any
+        // Only filter out if the user actually owns equipment (owner.id matches farmerId)
+        if (farmerId) {
+          const availableEquipment = allEquipment.filter(eq => {
+            const ownerId = eq.owner?.id || eq.ownerId;
+            return ownerId !== parseInt(farmerId, 10);
+          });
+          
+          if (availableEquipment.length === 0) {
+            // If filtering removed everything, show all equipment (user probably doesn't own any)
+            setEquipments(allEquipment);
+          } else {
+            setEquipments(availableEquipment);
+          }
+        } else {
+          // No farmerId, show all equipment
+          console.log("⚠️ No farmerId for filtering, showing all equipment");
+          setEquipments(allEquipment);
+        }
+        setLoading(false);
+      } catch (fallbackErr) {
+        console.error("❌ Fallback equipment fetch failed:", fallbackErr);
+        setError("Failed to load equipment list. Please refresh.");
+        setLoading(false);
+      }
+    };
+    
+    fetchEquipmentForRenter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loginTimestamp, navigate]);
 
   const handleRequestRental = (e) => {
     e.preventDefault();
-    if (!selectedEquipmentType || !startDate || !hours || !locationText) {
+
+    if (!selectedEquipmentId || !startDate || !hours || !locationText) {
       alert("Please fill all fields.");
       return;
     }
+
+    const chosenEquipment = equipments.find((eq) => String(eq.id) === String(selectedEquipmentId));
+    if (!chosenEquipment) {
+      alert("Selected equipment could not be found. Please choose again.");
+      return;
+    }
+
     const hoursNum = parseInt(hours, 10);
     if (!Number.isFinite(hoursNum) || hoursNum <= 0) {
       alert("Please enter a valid number of hours.");
       return;
     }
+
     const start = new Date(startDate);
     if (isNaN(start.getTime())) {
       alert("Please enter a valid start date.");
       return;
     }
+
     const startDateOnly = start.toISOString().slice(0, 10);
-    // Navigate to checkout with equipmentType instead of equipmentId
-    navigate(`/checkout?equipmentType=${selectedEquipmentType}&start=${startDateOnly}&hours=${hoursNum}&location=${encodeURIComponent(locationText)}`);
+
+    // Forward the equipment id and optional pricing details to checkout
+    navigate(`/checkout?equipmentId=${chosenEquipment.id}&start=${startDateOnly}&hours=${hoursNum}&price=${chosenEquipment.price ?? chosenEquipment.pricePerHour ?? ""}&location=${encodeURIComponent(locationText)}`);
   };
 
   if (loading) return <div style={styles.page}>{t("common.loading")}</div>;
   if (error) return <div style={styles.page}>{error}</div>;
+  if (!equipments.length) {
+    return (
+      <div style={styles.page}>
+        <h2>{t("bookings.title") || "Request Equipment Rental"}</h2>
+        <p>{t("bookings.noEquipmentMessage") || "No equipment is currently available for rent."}</p>
+        <button style={styles.primaryBtn} onClick={() => navigate(-1)}>
+          {t("common.back") || "Back"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -162,14 +250,14 @@ export default function Bookings() {
               <label style={styles.label}>{t("rent.selectEquipment")}</label>
               <select
                 style={styles.select}
-                value={selectedEquipmentType}
-                onChange={(e) => setSelectedEquipmentType(e.target.value)}
+                value={selectedEquipmentId}
+                onChange={(e) => setSelectedEquipmentId(e.target.value)}
                 required
               >
                 <option value="">{t("rent.choosePlaceholder")}</option>
-                {equipmentTypes.map((eq) => (
+                {equipments.map((eq) => (
                   <option key={eq.id} value={eq.id}>
-                    {t(`${eq.tKey}.name`)}
+                    {eq.name || eq.nameEn || t(`equip.${eq.category || "equipment"}.name`, { defaultValue: eq.name || "Unnamed" })}
                   </option>
                 ))}
               </select>

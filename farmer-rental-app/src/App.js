@@ -2,7 +2,11 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
+import RegisterSelection from "./pages/RegisterSelection";
+import RegisterBooker from "./pages/RegisterBooker";
+import RegisterAccepter from "./pages/RegisterAccepter";
 import Login from "./pages/Login";
+import RoleSelection from "./pages/RoleSelection";
 import Dashboard from "./pages/Dashboard";
 import RentEquipment from "./pages/RentEquipment"; 
 import AddEquipment from "./pages/AddEquipment";
@@ -19,15 +23,21 @@ import PlantDiseaseDetection from "./pages/PlantDiseaseDetection";
 import ManageMyEquipment from "./pages/ManageMyEquipment";
 import Checkout from "./pages/Checkout";
 import Payment from "./pages/Payment";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/register" element={<RegisterSelection />} />
+        <Route path="/register-old" element={<Register />} />
+        <Route path="/register-booker" element={<RegisterBooker />} />
+        <Route path="/register-accepter" element={<RegisterAccepter />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} /> 
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} /> 
         <Route path="/rent-equipment" element={<RentEquipment />} />
         <Route path="/add-equipment" element={<AddEquipment />} />
         <Route path="/manage-my-equipment" element={<ManageMyEquipment />} />

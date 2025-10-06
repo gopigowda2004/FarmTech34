@@ -101,4 +101,9 @@ public class Equipment {
     public void setOwner(Farmer owner) {
         this.owner = owner;
     }
+    
+    // Helper method for JPA queries that need ownerId
+    public Long getOwnerId() {
+        return owner != null ? owner.getId() : null;
+    }
 }

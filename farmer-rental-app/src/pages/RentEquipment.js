@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import api from "../api/axiosInstance"; // shared axios instance
 import { useI18n } from "../i18n/i18n";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { isAdminUser, checkAdminStatus } from "../utils/adminUtils";
+import { useNavigate } from "react-router-dom";
 
 const RentEquipment = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
 
   // Internal form state kept in English for backend consistency
   const [formData, setFormData] = useState({
@@ -14,8 +17,26 @@ const RentEquipment = () => {
     image: "",
   });
   const [selectedId, setSelectedId] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
     
   const farmerId = localStorage.getItem("farmerId");
+
+  // Check admin status on component mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const adminStatus = await checkAdminStatus();
+      setIsAdmin(adminStatus);
+      setLoading(false);
+      
+      // Redirect non-admin users
+      if (!adminStatus) {
+        alert("Access denied. Only administrators can add equipment.");
+        navigate("/dashboard");
+      }
+    };
+    checkAdmin();
+  }, [navigate]);
 
   // Predefined equipment list (source of truth)
   const equipments = useMemo(
@@ -179,115 +200,414 @@ const RentEquipment = () => {
   const displayName = selectedEq ? t(`${selectedEq.tKey}.name`) : "";
   const displayDescription = selectedEq ? t(`${selectedEq.tKey}.description`) : "";
 
+  // Show loading state while checking admin status
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loadingContainer}>
+          <div style={styles.loadingSpinner}></div>
+          <p style={styles.loadingText}>Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not admin (will redirect)
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
-    <div className="rent-container">
+    <div style={styles.container}>
       <style>{`
-        .rent-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: linear-gradient(to bottom right, #d1fae5, #ffffff, #bbf7d0);
-          padding: 1rem;
+        @keyframes slideIn {
+          0% { transform: translateY(30px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
         }
-        .rent-card {
-          width: 100%;
-          max-width: 550px;
-          background: #fff;
-          border-radius: 1.2rem;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-          padding: 2rem;
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
         }
-        .rent-title {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          font-size: 1.4rem;
-          font-weight: 800;
-          text-align: left;
-          color: #166534;
-          margin-bottom: 1rem;
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
-        .rent-form { display: flex; flex-direction: column; gap: 1.2rem; }
-        .rent-label { font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0.2rem; }
-        .rent-input, .rent-textarea, .rent-select {
-          width: 100%; padding: 0.8rem; border: 1px solid #d1d5db; border-radius: 0.6rem; outline: none; background-color: #f9fafb;
+        .equipment-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 20px 40px rgba(220, 38, 38, 0.2);
         }
-        .rent-input:focus, .rent-textarea:focus, .rent-select:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(34,197,94,0.3); }
-        .rent-textarea { resize: none; }
-        .rent-input[readonly], .rent-textarea[readonly] { background-color: #f3f4f6; cursor: not-allowed; }
-        .rent-button { width: 100%; padding: 1rem; border: none; border-radius: 0.6rem; font-size: 1rem; font-weight: 600; color: #fff; background: linear-gradient(to right, #22c55e, #15803d); cursor: pointer; }
-        .rent-button:hover { transform: scale(1.05); background: linear-gradient(to right, #16a34a, #166534); }
-        .rent-image { margin-top: 0.8rem; width: 100%; height: 200px; object-fit: cover; border-radius: 0.6rem; border: 1px solid #d1d5db; }
+        .rent-button:hover {
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
+          transform: scale(1.05);
+        }
+        .equipment-grid {
+          animation: slideIn 0.6s ease-out;
+        }
       `}</style>
 
-      <div className="rent-card">
-        <div className="rent-title">
-          <span>🌾 {t("rent.title")}</span>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.headerContent}>
+          <div style={styles.headerLeft}>
+            <div style={styles.iconContainer}>
+              <span style={styles.headerIcon}>🚜</span>
+            </div>
+            <div>
+              <h1 style={styles.headerTitle}>List Equipment</h1>
+              <p style={styles.headerSubtitle}>Share your farm equipment with others</p>
+            </div>
+          </div>
           <LanguageSwitcher inline />
         </div>
-
-        <form onSubmit={handleSubmit} className="rent-form">
-          {/* Select equipment */}
-          <div>
-            <label className="rent-label">{t("rent.selectEquipment")}</label>
-            <select
-              className="rent-select"
-              onChange={handleEquipmentSelect}
-              value={selectedId}
-              required
-            >
-              <option value="">{t("rent.choosePlaceholder")}</option>
-              {equipments.map((eq) => (
-                <option key={eq.id} value={eq.id}>
-                  {t(`${eq.tKey}.name`)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Description (locked, translated view) */}
-          <div>
-            <label className="rent-label">{t("rent.description")}</label>
-            <textarea
-              name="description"
-              value={displayDescription}
-              className="rent-textarea"
-              rows={3}
-              readOnly
-              required
-            />
-          </div>
-
-          {/* Price per hour (locked) */}
-          <div>
-            <label className="rent-label">{t("rent.pricePerHour")}</label>
-            <input
-              type="number"
-              name="pricePerHour"
-              value={formData.pricePerHour}
-              className="rent-input"
-              readOnly
-              required
-            />
-          </div>
-
-          {/* Image preview only */}
-          {formData.image && (
-            <div>
-              <label className="rent-label">{t("rent.preview")}</label>
-              <img src={formData.image} alt="Preview" className="rent-image" />
-            </div>
-          )}
-
-          <button type="submit" className="rent-button">
-            {t("btn.rentEquipment")} 🚜
-          </button>
-        </form>
       </div>
+
+      {/* Equipment Selection Grid */}
+      <div style={styles.equipmentGrid} className="equipment-grid">
+        <h2 style={styles.sectionTitle}>Choose Equipment to List</h2>
+        <div style={styles.grid}>
+          {equipments.map((eq) => (
+            <div
+              key={eq.id}
+              style={{
+                ...styles.equipmentCard,
+                ...(selectedId === eq.id ? styles.selectedCard : {})
+              }}
+              className="equipment-card"
+              onClick={() => handleEquipmentSelect({ target: { value: eq.id } })}
+            >
+              <div style={styles.cardImageContainer}>
+                <img src={eq.image} alt={eq.nameEn} style={styles.cardImage} />
+                {selectedId === eq.id && (
+                  <div style={styles.selectedOverlay}>
+                    <span style={styles.checkIcon}>✓</span>
+                  </div>
+                )}
+              </div>
+              <div style={styles.cardContent}>
+                <h3 style={styles.cardTitle}>{t(`${eq.tKey}.name`)}</h3>
+                <p style={styles.cardDescription}>{t(`${eq.tKey}.description`)}</p>
+                <div style={styles.priceContainer}>
+                  <span style={styles.priceLabel}>Price per hour</span>
+                  <span style={styles.priceValue}>₹{eq.pricePerHour}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected Equipment Details */}
+      {selectedEq && (
+        <div style={styles.detailsCard}>
+          <h2 style={styles.detailsTitle}>Equipment Details</h2>
+          <div style={styles.detailsContent}>
+            <div style={styles.detailsLeft}>
+              <img src={selectedEq.image} alt={selectedEq.nameEn} style={styles.detailsImage} />
+            </div>
+            <div style={styles.detailsRight}>
+              <h3 style={styles.detailsName}>{t(`${selectedEq.tKey}.name`)}</h3>
+              <p style={styles.detailsDesc}>{t(`${selectedEq.tKey}.description`)}</p>
+              <div style={styles.detailsPrice}>
+                <span style={styles.detailsPriceLabel}>Hourly Rate</span>
+                <span style={styles.detailsPriceValue}>₹{selectedEq.pricePerHour}</span>
+              </div>
+              
+              <form onSubmit={handleSubmit} style={styles.form}>
+                <button type="submit" style={styles.submitButton} className="rent-button">
+                  <span style={styles.buttonIcon}>🚀</span>
+                  List This Equipment
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!selectedEq && (
+        <div style={styles.emptyState}>
+          <div style={styles.emptyIcon}>🎯</div>
+          <h3 style={styles.emptyTitle}>Select Equipment to Continue</h3>
+          <p style={styles.emptyDescription}>
+            Choose from our wide range of farm equipment to list for rent
+          </p>
+        </div>
+      )}
     </div>
   );
+};
+
+const styles = {
+  container: {
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #111827 0%, #0f172a 60%, #020617 100%)',
+    padding: '20px',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  header: {
+    marginBottom: '40px',
+  },
+  headerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    maxWidth: '1200px',
+    margin: '0 auto',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+  },
+  iconContainer: {
+    width: '60px',
+    height: '60px',
+    background: 'rgba(255,255,255,0.2)',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(10px)',
+  },
+  headerIcon: {
+    fontSize: '28px',
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: '32px',
+    fontWeight: '700',
+    margin: '0',
+    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+  },
+  headerSubtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: '16px',
+    margin: '5px 0 0 0',
+  },
+  equipmentGrid: {
+    maxWidth: '1200px',
+    margin: '0 auto 40px auto',
+  },
+  sectionTitle: {
+    color: 'white',
+    fontSize: '24px',
+    fontWeight: '600',
+    marginBottom: '30px',
+    textAlign: 'center',
+    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '20px',
+  },
+  equipmentCard: {
+    background: 'white',
+    borderRadius: '20px',
+    overflow: 'hidden',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+    border: '3px solid transparent',
+  },
+  selectedCard: {
+    border: '3px solid #dc2626',
+    transform: 'translateY(-5px)',
+    boxShadow: '0 20px 40px rgba(220, 38, 38, 0.2)',
+  },
+  cardImageContainer: {
+    position: 'relative',
+    height: '200px',
+    overflow: 'hidden',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  selectedOverlay: {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    width: '40px',
+    height: '40px',
+    background: '#dc2626',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkIcon: {
+    color: 'white',
+    fontSize: '20px',
+    fontWeight: 'bold',
+  },
+  cardContent: {
+    padding: '20px',
+  },
+  cardTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#1f2937',
+    margin: '0 0 10px 0',
+  },
+  cardDescription: {
+    fontSize: '14px',
+    color: '#6b7280',
+    margin: '0 0 15px 0',
+    lineHeight: '1.4',
+  },
+  priceContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceLabel: {
+    fontSize: '12px',
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  priceValue: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  detailsCard: {
+    maxWidth: '800px',
+    margin: '0 auto',
+    background: 'white',
+    borderRadius: '24px',
+    padding: '40px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+  },
+  detailsTitle: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '30px',
+    textAlign: 'center',
+  },
+  detailsContent: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '40px',
+    alignItems: 'center',
+  },
+  detailsLeft: {
+    textAlign: 'center',
+  },
+  detailsImage: {
+    width: '100%',
+    maxWidth: '300px',
+    height: '200px',
+    objectFit: 'cover',
+    borderRadius: '16px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+  },
+  detailsRight: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  detailsName: {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#1f2937',
+    margin: '0',
+  },
+  detailsDesc: {
+    fontSize: '16px',
+    color: '#6b7280',
+    lineHeight: '1.6',
+    margin: '0',
+  },
+  detailsPrice: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+  },
+  detailsPriceLabel: {
+    fontSize: '12px',
+    color: '#6b7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  detailsPriceValue: {
+    fontSize: '32px',
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  form: {
+    marginTop: '20px',
+  },
+  submitButton: {
+    width: '100%',
+    padding: '15px 20px',
+    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+  },
+  buttonIcon: {
+    fontSize: '18px',
+  },
+  emptyState: {
+    maxWidth: '400px',
+    margin: '0 auto',
+    textAlign: 'center',
+    background: 'rgba(255,255,255,0.1)',
+    padding: '60px 40px',
+    borderRadius: '24px',
+    backdropFilter: 'blur(10px)',
+  },
+  emptyIcon: {
+    fontSize: '64px',
+    marginBottom: '20px',
+  },
+  emptyTitle: {
+    color: 'white',
+    fontSize: '24px',
+    fontWeight: '600',
+    margin: '0 0 15px 0',
+  },
+  emptyDescription: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: '16px',
+    lineHeight: '1.5',
+    margin: '0',
+  },
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '60vh',
+    gap: '20px',
+  },
+  loadingSpinner: {
+    width: '50px',
+    height: '50px',
+    border: '4px solid rgba(255,255,255,0.3)',
+    borderTop: '4px solid #dc2626',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: '18px',
+    fontWeight: '500',
+  },
 };
 
 export default RentEquipment;

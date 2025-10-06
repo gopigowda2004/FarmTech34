@@ -2,12 +2,16 @@ package com.farmtech.backend.controller;
 
 import com.farmtech.backend.entity.Equipment;
 import com.farmtech.backend.entity.Farmer;
+import com.farmtech.backend.entity.User;
 import com.farmtech.backend.repository.EquipmentRepository;
 import com.farmtech.backend.repository.FarmerRepository;
+import com.farmtech.backend.repository.UserRepository;
 import com.farmtech.backend.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -23,36 +27,66 @@ public class EquipmentController {
     private FarmerRepository farmerRepo;
 
     @Autowired
+    private UserRepository userRepo;
+
+    @Autowired
     private BookingRepository bookingRepo;
 
-    // ✅ Add new equipment (Rent) - path variable style
-    @PostMapping("/add/{farmerId}")
-    public Equipment addEquipment(@PathVariable Long farmerId, @RequestBody Equipment eq) {
-        Farmer farmer = farmerRepo.findById(farmerId)
-                .orElseThrow(() -> new RuntimeException("Farmer not found"));
-        eq.setOwner(farmer);
-        return equipmentRepo.save(eq);
+    // Helper method to check if user is admin
+    private boolean isAdmin(Long userId) {
+        if (userId == null) return false;
+        User user = userRepo.findById(userId).orElse(null);
+        return user != null && "ADMIN".equals(user.getRole());
     }
 
-    // ✅ Alternative: Add new equipment with request param to ease frontend integration
-    @PostMapping("/add")
-    public Equipment addEquipmentWithParam(@RequestParam Long farmerId, @RequestBody Equipment eq) {
+    // ✅ Add new equipment (ADMIN ONLY) - path variable style
+    @PostMapping("/add/{farmerId}")
+    public ResponseEntity<?> addEquipment(@PathVariable Long farmerId, @RequestBody Equipment eq, @RequestParam Long userId) {
+        // Check if user is admin
+        if (!isAdmin(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only administrators can add equipment.");
+        }
+        
         Farmer farmer = farmerRepo.findById(farmerId)
                 .orElseThrow(() -> new RuntimeException("Farmer not found"));
         eq.setOwner(farmer);
-        return equipmentRepo.save(eq);
+        Equipment saved = equipmentRepo.save(eq);
+        return ResponseEntity.ok(saved);
+    }
+
+    // ✅ Alternative: Add new equipment with request param (ADMIN ONLY)
+    @PostMapping("/add")
+    public ResponseEntity<?> addEquipmentWithParam(@RequestParam Long farmerId, @RequestParam Long userId, @RequestBody Equipment eq) {
+        // Check if user is admin
+        if (!isAdmin(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only administrators can add equipment.");
+        }
+        
+        Farmer farmer = farmerRepo.findById(farmerId)
+                .orElseThrow(() -> new RuntimeException("Farmer not found"));
+        eq.setOwner(farmer);
+        Equipment saved = equipmentRepo.save(eq);
+        return ResponseEntity.ok(saved);
+    }
+
+    // ✅ Fetch all equipment (for general listing)
+    @GetMapping
+    public List<Equipment> getAllEquipments() {
+        return equipmentRepo.findAll();
     }
 
     // ✅ Fetch all other farmers' equipment
     @GetMapping("/others/{farmerId}")
     public List<Equipment> getOtherFarmersEquipments(@PathVariable Long farmerId) {
-        return equipmentRepo.findByOwnerIdNot(farmerId);
+        return equipmentRepo.findByOwner_IdNot(farmerId);
     }
 
     // ✅ Fetch logged-in farmer’s own equipment
     @GetMapping("/my/{farmerId}")
     public List<Equipment> getMyEquipments(@PathVariable Long farmerId) {
-        return equipmentRepo.findByOwnerId(farmerId);
+        return equipmentRepo.findByOwner_Id(farmerId);
     }
 
     // ✅ Fetch equipment by ID (for checkout/details)
@@ -62,36 +96,72 @@ public class EquipmentController {
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
     }
 
-    // ✅ Update equipment (only by owner)
+    // ✅ Update equipment (ADMIN ONLY)
     @PutMapping("/{equipmentId}")
-    public Equipment updateEquipment(@PathVariable Long equipmentId,
+    public ResponseEntity<?> updateEquipment(@PathVariable Long equipmentId,
                                      @RequestParam Long farmerId,
+                                     @RequestParam Long userId,
                                      @RequestBody Equipment payload) {
+        // Check if user is admin
+        if (!isAdmin(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only administrators can update equipment.");
+        }
+        
         Equipment existing = equipmentRepo.findById(equipmentId)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
-        if (existing.getOwner() == null || !existing.getOwner().getId().equals(farmerId)) {
-            throw new RuntimeException("Not authorized to update this equipment");
-        }
+        
         // Update allowed fields
         existing.setName(payload.getName());
         existing.setDescription(payload.getDescription());
         existing.setPrice(payload.getPrice());
         existing.setPricePerHour(payload.getPricePerHour());
         existing.setImage(payload.getImage());
-        return equipmentRepo.save(existing);
+        Equipment updated = equipmentRepo.save(existing);
+        return ResponseEntity.ok(updated);
     }
 
-    // ✅ Delete equipment (only by owner) - cascade delete dependent bookings first to avoid FK errors
+    // ✅ Delete equipment (ADMIN ONLY) - cascade delete dependent bookings first to avoid FK errors
     @Transactional
     @DeleteMapping("/{equipmentId}")
-    public void deleteEquipment(@PathVariable Long equipmentId, @RequestParam Long farmerId) {
+    public ResponseEntity<?> deleteEquipment(@PathVariable Long equipmentId, @RequestParam Long farmerId, @RequestParam Long userId) {
+        // Check if user is admin
+        if (!isAdmin(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only administrators can delete equipment.");
+        }
+        
         Equipment existing = equipmentRepo.findById(equipmentId)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
-        if (existing.getOwner() == null || !existing.getOwner().getId().equals(farmerId)) {
-            throw new RuntimeException("Not authorized to delete this equipment");
-        }
+        
         // Remove dependent bookings to satisfy foreign key constraints
         bookingRepo.deleteByEquipmentId(equipmentId);
         equipmentRepo.deleteById(equipmentId);
+        
+        return ResponseEntity.ok("Equipment deleted successfully");
+    }
+
+    // ✅ Check if user has admin role
+    @GetMapping("/check-admin/{userId}")
+    public ResponseEntity<?> checkAdminRole(@PathVariable Long userId) {
+        boolean isAdminUser = isAdmin(userId);
+        return ResponseEntity.ok(new AdminCheckResponse(isAdminUser));
+    }
+
+    // Response class for admin check
+    public static class AdminCheckResponse {
+        private boolean isAdmin;
+        
+        public AdminCheckResponse(boolean isAdmin) {
+            this.isAdmin = isAdmin;
+        }
+        
+        public boolean isAdmin() {
+            return isAdmin;
+        }
+        
+        public void setAdmin(boolean admin) {
+            isAdmin = admin;
+        }
     }
 }

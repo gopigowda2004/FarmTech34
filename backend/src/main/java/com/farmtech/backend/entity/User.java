@@ -12,9 +12,6 @@ public class User {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String aadhar;
-
-    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false, unique = true)
@@ -42,12 +39,11 @@ public class User {
 
     public User() {}
 
-    public User(String aadhar, String email, String phone, String password,
+    public User(String email, String phone, String password,
                 String name, String fullName, String gender, LocalDate dob,
                 String address, String district, String state, String pincode,
                 String farmSize, String cropType, String experience, String equipmentOwned,
                 String role) {
-        this.aadhar = aadhar;
         this.email = email;
         this.phone = phone;
         this.password = password;
@@ -69,9 +65,6 @@ public class User {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public String getAadhar() { return aadhar; }
-    public void setAadhar(String aadhar) { this.aadhar = aadhar; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

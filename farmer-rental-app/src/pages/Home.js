@@ -23,7 +23,7 @@ function HomePage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <LanguageSwitcher inline />
           <div style={styles.navButtons}>
-            <button style={styles.loginBtn} onClick={() => navigate("/login")}>
+            <button style={styles.loginBtn} onClick={() => navigate("/role-selection")}>
               {t("btn.login")}
             </button>
             <button style={styles.signUpBtn} onClick={() => navigate("/register")}>

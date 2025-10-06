@@ -9,9 +9,10 @@ export default function Checkout() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const equipmentType = searchParams.get("equipmentType");
+  const equipmentId = searchParams.get("equipmentId");
   const start = searchParams.get("start"); // YYYY-MM-DD
   const hours = Number(searchParams.get("hours"));
+  const price = Number(searchParams.get("price"));
   const locationParam = searchParams.get("location");
 
   const [equipment, setEquipment] = useState(null);
@@ -21,8 +22,9 @@ export default function Checkout() {
   const [gettingLocation, setGettingLocation] = useState(false);
 
   const farmerId = localStorage.getItem("farmerId");
+  const userId = localStorage.getItem("userId");
 
-  // Predefined equipment list (source of truth)
+
   const equipments = useMemo(
     () => [
       {
@@ -127,24 +129,44 @@ export default function Checkout() {
   );
 
   useEffect(() => {
-    if (!farmerId) {
+    console.log("🔄 Checkout useEffect - farmerId:", farmerId, "userId:", userId);
+    
+    // Check for authentication - require either userId or farmerId
+    if (!farmerId && !userId) {
+      console.log("❌ No farmerId or userId found, redirecting to home");
       navigate("/");
       return;
     }
-    if (!equipmentType || !start || !hours || hours <= 0) {
+    
+    // If userId exists but farmerId doesn't, show warning but continue
+    if (!farmerId && userId) {
+      console.warn("⚠️ User has userId but no farmerId - continuing with checkout");
+    }
+    
+    if (!equipmentId || !start || !hours || hours <= 0) {
+      console.log("❌ Missing booking details");
       setError("Missing booking details. Please start again.");
       setLoading(false);
       return;
     }
 
-    const selectedEq = equipments.find((eq) => eq.id === equipmentType);
-    if (selectedEq) {
-      setEquipment(selectedEq);
-    } else {
-      setError("Equipment type not found.");
-    }
-    setLoading(false);
-  }, [equipmentType, start, hours, farmerId, navigate, equipments]);
+    console.log("✅ Fetching equipment details for ID:", equipmentId);
+    // Fetch equipment details from API
+    api.get(`/equipments/${equipmentId}`)
+      .then((res) => {
+        const fetchedEquipment = res.data;
+        const resolvedPrice = price && !Number.isNaN(price)
+          ? price
+          : fetchedEquipment.pricePerHour ?? fetchedEquipment.price;
+        console.log("✅ Equipment fetched successfully:", fetchedEquipment.name);
+        setEquipment({ ...fetchedEquipment, pricePerHour: resolvedPrice });
+      })
+      .catch((err) => {
+        console.error("❌ Error fetching equipment:", err);
+        setError("Equipment not found.");
+      })
+      .finally(() => setLoading(false));
+  }, [equipmentId, start, hours, price, farmerId, userId, navigate]);
 
   const pricePerHour = useMemo(() => equipment?.pricePerHour ?? null, [equipment]);
   const totalPrice = useMemo(() => (pricePerHour ? Math.round(pricePerHour * hours) : null), [pricePerHour, hours]);
@@ -275,7 +297,7 @@ export default function Checkout() {
                 alert("Please provide a location or use current location.");
                 return;
               }
-              navigate(`/payment?equipmentType=${equipmentType}&start=${start}&hours=${hours}`, {
+              navigate(`/payment?equipmentId=${equipmentId}&start=${start}&hours=${hours}&price=${price}`, {
                 state: { locationText },
               });
             }}

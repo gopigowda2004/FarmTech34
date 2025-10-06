@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n/i18n";
@@ -8,6 +8,7 @@ export default function AddEquipment() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const farmerId = localStorage.getItem("farmerId");
+  const userId = localStorage.getItem("userId");
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -16,16 +17,39 @@ export default function AddEquipment() {
     imageUrl: "",
   });
 
+  useEffect(() => {
+    console.log("🔄 AddEquipment - farmerId:", farmerId, "userId:", userId);
+    
+    // Check authentication
+    if (!farmerId && !userId) {
+      console.log("❌ No authentication found, redirecting to home");
+      navigate("/");
+      return;
+    }
+    
+    // Warn if farmerId is missing (needed for adding equipment)
+    if (!farmerId && userId) {
+      console.warn("⚠️ User has userId but no farmerId - may not be able to add equipment");
+    }
+  }, [farmerId, userId, navigate]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!farmerId) {
+    
+    // Use farmerId if available, otherwise fall back to userId
+    const ownerId = farmerId || userId;
+    
+    if (!ownerId) {
       alert(t("addEquipment.alerts.missingFarmer"));
       return;
     }
+    
+    console.log("🔄 Adding equipment with ownerId:", ownerId, "(farmerId:", farmerId, "userId:", userId, ")");
+    
     const payload = {
       name: form.name,
       description: form.description,
@@ -33,9 +57,16 @@ export default function AddEquipment() {
       pricePerHour: form.pricePerHour ? Number(form.pricePerHour) : null,
       image: form.imageUrl,
     };
-    await axiosInstance.post(`/equipments/add`, payload, { params: { farmerId } });
-    alert(t("dashboard.addForm.success"));
-    navigate("/equipment-list");
+    
+    try {
+      await axiosInstance.post(`/equipments/add`, payload, { params: { farmerId: ownerId } });
+      console.log("✅ Equipment added successfully");
+      alert(t("dashboard.addForm.success"));
+      navigate("/equipment-list");
+    } catch (err) {
+      console.error("❌ Failed to add equipment:", err?.response?.data || err.message);
+      alert("Failed to add equipment. Please try again.");
+    }
   };
 
   return (

@@ -10,12 +10,11 @@ export default function Payment() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const equipmentType = searchParams.get("equipmentType");
+  const equipmentId = searchParams.get("equipmentId");
   const start = searchParams.get("start"); // YYYY-MM-DD
   const hours = Number(searchParams.get("hours"));
+  const price = Number(searchParams.get("price"));
   const locationText = location.state?.locationText || "";
-
-  const farmerId = localStorage.getItem("farmerId");
 
   const [equipment, setEquipment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,24 +47,46 @@ export default function Payment() {
   );
 
   useEffect(() => {
-    if (!farmerId) {
+    // Read authentication from localStorage
+    const farmerId = localStorage.getItem("farmerId");
+    const userId = localStorage.getItem("userId");
+    
+    console.log("🔄 Payment useEffect - farmerId:", farmerId, "userId:", userId);
+    
+    // Check for authentication - require either userId or farmerId
+    if (!farmerId && !userId) {
+      console.log("❌ No farmerId or userId found, redirecting to home");
       navigate("/");
       return;
     }
-    if (!equipmentType || !start || !hours || hours <= 0) {
+    
+    // If userId exists but farmerId doesn't, show warning but continue
+    if (!farmerId && userId) {
+      console.warn("⚠️ User has userId but no farmerId - continuing with payment");
+    }
+    
+    if (!equipmentId || !start || !hours || hours <= 0) {
+      console.log("❌ Missing booking details");
       setError("Missing booking details. Please start again.");
       setLoading(false);
       return;
     }
 
-    const selectedEq = equipments.find((eq) => eq.id === equipmentType);
-    if (selectedEq) {
-      setEquipment(selectedEq);
-    } else {
-      setError("Equipment type not found.");
-    }
-    setLoading(false);
-  }, [equipmentType, start, hours, farmerId, navigate, equipments]);
+    console.log("✅ Fetching equipment details for payment - ID:", equipmentId);
+    // Fetch equipment details from API
+    api.get(`/equipments/${equipmentId}`)
+      .then((res) => {
+        const fetchedEquipment = res.data;
+        const resolvedPrice = price && !Number.isNaN(price) ? price : fetchedEquipment.pricePerHour ?? fetchedEquipment.price;
+        console.log("✅ Equipment fetched for payment:", fetchedEquipment.name);
+        setEquipment({ ...fetchedEquipment, pricePerHour: resolvedPrice });
+      })
+      .catch((err) => {
+        console.error("❌ Error fetching equipment:", err);
+        setError("Equipment not found.");
+      })
+      .finally(() => setLoading(false));
+  }, [equipmentId, start, hours, price, navigate]);
 
   const pricePerHour = useMemo(() => equipment?.pricePerHour ?? null, [equipment]);
   const totalPrice = useMemo(() => (pricePerHour ? Math.round(pricePerHour * hours) : null), [pricePerHour, hours]);
@@ -78,16 +99,37 @@ export default function Payment() {
         setToastOpen(true);
         return;
       }
+      
+      // Read farmerId and userId fresh from localStorage
+      const farmerId = localStorage.getItem("farmerId");
+      const userId = localStorage.getItem("userId");
+      const renterId = farmerId || userId;
+      
+      console.log("🔍 DEBUG - farmerId:", farmerId, "userId:", userId, "renterId:", renterId);
+      
+      if (!renterId) {
+        console.error("❌ No renterId available (neither farmerId nor userId)");
+        setToastSeverity("error");
+        setToastMsg("Authentication error. Please log in again.");
+        setToastOpen(true);
+        return;
+      }
+      
+      console.log("🔄 Creating booking with renterId:", renterId, "(farmerId:", farmerId, "userId:", userId, ")");
+      console.log("📦 Booking params:", { equipmentId, renterId, startDate: start, hours, location: locationText });
+      
       await api.post(`/bookings/create`, null, {
-        params: { equipmentType, renterId: farmerId, startDate: start, hours, location: locationText },
+        params: { equipmentId, renterId, startDate: start, hours, location: locationText },
       });
+      
+      console.log("✅ Booking created successfully!");
       setToastSeverity("success");
       setToastMsg("Booking confirmed (Cash on Delivery)!");
       setToastOpen(true);
       // redirect after short delay
       setTimeout(() => navigate("/my-bookings", { replace: true }), 1200);
     } catch (err) {
-      console.error("Payment booking error:", err?.response?.data || err.message);
+      console.error("❌ Payment booking error:", err?.response?.data || err.message);
       setToastSeverity("error");
       setToastMsg("Failed to place order. Please try again.");
       setToastOpen(true);
