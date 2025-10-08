@@ -3,10 +3,12 @@ package com.farmtech.backend.controller;
 import com.farmtech.backend.entity.Equipment;
 import com.farmtech.backend.entity.Farmer;
 import com.farmtech.backend.entity.User;
+import com.farmtech.backend.entity.Booking;
 import com.farmtech.backend.repository.EquipmentRepository;
 import com.farmtech.backend.repository.FarmerRepository;
 import com.farmtech.backend.repository.UserRepository;
 import com.farmtech.backend.repository.BookingRepository;
+import com.farmtech.backend.repository.BookingCandidateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,9 @@ public class EquipmentController {
 
     @Autowired
     private BookingRepository bookingRepo;
+
+    @Autowired
+    private BookingCandidateRepository candidateRepo;
 
     // Helper method to check if user is admin
     private boolean isAdmin(Long userId) {
@@ -121,7 +126,7 @@ public class EquipmentController {
         return ResponseEntity.ok(updated);
     }
 
-    // ✅ Delete equipment (ADMIN ONLY) - cascade delete dependent bookings first to avoid FK errors
+    // ✅ Delete equipment (ADMIN ONLY) - cascade delete dependent records to avoid FK errors
     @Transactional
     @DeleteMapping("/{equipmentId}")
     public ResponseEntity<?> deleteEquipment(@PathVariable Long equipmentId, @RequestParam Long farmerId, @RequestParam Long userId) {
@@ -134,8 +139,18 @@ public class EquipmentController {
         Equipment existing = equipmentRepo.findById(equipmentId)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
         
-        // Remove dependent bookings to satisfy foreign key constraints
+        // Step 1: Get all bookings for this equipment
+        List<Booking> bookings = bookingRepo.findByEquipmentId(equipmentId);
+        
+        // Step 2: Delete booking candidates for each booking (to satisfy FK constraints)
+        for (Booking booking : bookings) {
+            candidateRepo.deleteAll(candidateRepo.findByBookingId(booking.getId()));
+        }
+        
+        // Step 3: Delete the bookings
         bookingRepo.deleteByEquipmentId(equipmentId);
+        
+        // Step 4: Finally delete the equipment
         equipmentRepo.deleteById(equipmentId);
         
         return ResponseEntity.ok("Equipment deleted successfully");

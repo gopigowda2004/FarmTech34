@@ -27,6 +27,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.renter.id = :renterId AND b.status = :status")
     List<Booking> findByRenterIdAndStatus(@Param("renterId") Long renterId, @Param("status") String status);
 
+    // Find all bookings for a specific equipment
+    @Query("SELECT b FROM Booking b WHERE b.equipment.id = :equipmentId")
+    List<Booking> findByEquipmentId(@Param("equipmentId") Long equipmentId);
+
     // Clean up all bookings referencing an equipment (to avoid FK constraint on delete)
     void deleteByEquipmentId(Long equipmentId);
 }

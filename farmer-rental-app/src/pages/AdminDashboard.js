@@ -17,6 +17,10 @@ const AdminDashboard = () => {
     price: "",
     image: ""
   });
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingEquipment, setEditingEquipment] = useState(null);
+  const [editUserForm, setEditUserForm] = useState({});
+  const [editEquipmentForm, setEditEquipmentForm] = useState({});
 
   // Check if user is admin
   useEffect(() => {
@@ -73,12 +77,84 @@ const AdminDashboard = () => {
     if (window.confirm("Are you sure you want to delete this equipment?")) {
       try {
         const userId = localStorage.getItem("userId");
-        await api.delete(`/equipments/${equipmentId}?userId=${userId}`);
+        const farmerId = localStorage.getItem("farmerId") || "1"; // Admin farmer ID
+        await api.delete(`/equipments/${equipmentId}?farmerId=${farmerId}&userId=${userId}`);
         setEquipment(equipment.filter(eq => eq.id !== equipmentId));
         alert("✅ Equipment deleted successfully");
       } catch (error) {
         alert("❌ Error deleting equipment: " + (error.response?.data?.message || error.message));
       }
+    }
+  };
+
+  const startEditUser = (user) => {
+    setEditingUser(user.id);
+    setEditUserForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      district: user.district || "",
+      state: user.state || "",
+      farmSize: user.farmSize || ""
+    });
+  };
+
+  const cancelEditUser = () => {
+    setEditingUser(null);
+    setEditUserForm({});
+  };
+
+  const saveEditUser = async (userId) => {
+    try {
+      await api.put(`/users/${userId}`, editUserForm);
+      // Refresh users list
+      const usersRes = await api.get("/users");
+      setUsers(usersRes.data || []);
+      setEditingUser(null);
+      setEditUserForm({});
+      alert("✅ User updated successfully");
+    } catch (error) {
+      alert("❌ Error updating user: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const startEditEquipment = (eq) => {
+    setEditingEquipment(eq.id);
+    setEditEquipmentForm({
+      name: eq.name,
+      description: eq.description || "",
+      price: eq.pricePerDay || eq.price,
+      image: eq.image || ""
+    });
+  };
+
+  const cancelEditEquipment = () => {
+    setEditingEquipment(null);
+    setEditEquipmentForm({});
+  };
+
+  const saveEditEquipment = async (equipmentId) => {
+    try {
+      const userId = localStorage.getItem("userId");
+      const farmerId = localStorage.getItem("farmerId") || "1"; // Admin farmer ID
+      const updateData = {
+        name: editEquipmentForm.name,
+        description: editEquipmentForm.description,
+        price: parseFloat(editEquipmentForm.price),
+        pricePerHour: parseFloat(editEquipmentForm.price) / 24,
+        image: editEquipmentForm.image
+      };
+      
+      await api.put(`/equipments/${equipmentId}?userId=${userId}&farmerId=${farmerId}`, updateData);
+      // Refresh equipment list
+      const equipmentRes = await api.get("/equipments");
+      setEquipment(equipmentRes.data || []);
+      setEditingEquipment(null);
+      setEditEquipmentForm({});
+      alert("✅ Equipment updated successfully");
+    } catch (error) {
+      alert("❌ Error updating equipment: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -88,10 +164,12 @@ const AdminDashboard = () => {
       const userId = localStorage.getItem("userId");
       const farmerId = localStorage.getItem("farmerId") || "1"; // Default admin farmer ID
       
+      const pricePerDay = parseFloat(equipmentForm.price);
       const equipmentData = {
         name: equipmentForm.name,
         description: equipmentForm.description,
-        price: parseFloat(equipmentForm.price),
+        price: pricePerDay,
+        pricePerHour: pricePerDay / 24, // Calculate hourly rate
         image: equipmentForm.image
       };
       
@@ -108,7 +186,8 @@ const AdminDashboard = () => {
       alert("✅ Equipment added successfully!");
     } catch (error) {
       console.error("Error adding equipment:", error);
-      alert("❌ Error adding equipment: " + (error.response?.data || error.message));
+      const errorMsg = error.response?.data?.message || error.response?.data || error.message;
+      alert("❌ Error adding equipment: " + (typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg));
     }
   };
 
@@ -214,40 +293,127 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
         </div>
         
         {users.map(user => (
-          <div key={user.id} style={{...styles.tableRow, gridTemplateColumns: "60px 1fr 1fr 120px 100px 1fr 100px 150px"}}>
-            <div style={styles.tableCell}>#{user.id}</div>
-            <div style={styles.tableCell}>{user.name}</div>
-            <div style={styles.tableCell}>{user.email}</div>
-            <div style={styles.tableCell}>{user.phone}</div>
-            <div style={styles.tableCell}>
-              <span style={{
-                ...styles.roleBadge,
-                backgroundColor: user.role === "ADMIN" ? "#ff6b6b" : 
-                                user.role === "OWNER" ? "#4ecdc4" : "#45b7d1"
-              }}>
-                {user.role}
-              </span>
+          editingUser === user.id && user.role !== "ADMIN" ? (
+            // Edit Mode (only for non-ADMIN users)
+            <div key={user.id} style={{...styles.tableRow, gridTemplateColumns: "60px 1fr 1fr 120px 100px 1fr 100px 150px", backgroundColor: "#f0f8ff"}}>
+              <div style={styles.tableCell}>#{user.id}</div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  value={editUserForm.name} 
+                  onChange={(e) => setEditUserForm({...editUserForm, name: e.target.value})}
+                  style={styles.editInput}
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="email" 
+                  value={editUserForm.email} 
+                  onChange={(e) => setEditUserForm({...editUserForm, email: e.target.value})}
+                  style={styles.editInput}
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  value={editUserForm.phone} 
+                  onChange={(e) => setEditUserForm({...editUserForm, phone: e.target.value})}
+                  style={styles.editInput}
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <select 
+                  value={editUserForm.role} 
+                  onChange={(e) => setEditUserForm({...editUserForm, role: e.target.value})}
+                  style={styles.editInput}
+                >
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="OWNER">OWNER</option>
+                  <option value="RENTER">RENTER</option>
+                </select>
+              </div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  placeholder="District" 
+                  value={editUserForm.district} 
+                  onChange={(e) => setEditUserForm({...editUserForm, district: e.target.value})}
+                  style={{...styles.editInput, marginBottom: "4px"}}
+                />
+                <input 
+                  type="text" 
+                  placeholder="State" 
+                  value={editUserForm.state} 
+                  onChange={(e) => setEditUserForm({...editUserForm, state: e.target.value})}
+                  style={styles.editInput}
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  value={editUserForm.farmSize} 
+                  onChange={(e) => setEditUserForm({...editUserForm, farmSize: e.target.value})}
+                  style={styles.editInput}
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <button 
+                  style={styles.saveButton}
+                  onClick={() => saveEditUser(user.id)}
+                >
+                  Save
+                </button>
+                <button 
+                  style={styles.cancelButton}
+                  onClick={cancelEditUser}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div style={styles.tableCell}>
-              <div>{user.district || "N/A"}</div>
-              <div style={styles.subText}>{user.state || ""}</div>
+          ) : (
+            // View Mode
+            <div key={user.id} style={{...styles.tableRow, gridTemplateColumns: "60px 1fr 1fr 120px 100px 1fr 100px 150px"}}>
+              <div style={styles.tableCell}>#{user.id}</div>
+              <div style={styles.tableCell}>{user.name}</div>
+              <div style={styles.tableCell}>{user.email}</div>
+              <div style={styles.tableCell}>{user.phone}</div>
+              <div style={styles.tableCell}>
+                <span style={{
+                  ...styles.roleBadge,
+                  backgroundColor: user.role === "ADMIN" ? "#ff6b6b" : 
+                                  user.role === "OWNER" ? "#4ecdc4" : "#45b7d1"
+                }}>
+                  {user.role}
+                </span>
+              </div>
+              <div style={styles.tableCell}>
+                <div>{user.district || "N/A"}</div>
+                <div style={styles.subText}>{user.state || ""}</div>
+              </div>
+              <div style={styles.tableCell}>{user.farmSize || "N/A"}</div>
+              <div style={styles.tableCell}>
+                {user.role !== "ADMIN" ? (
+                  <>
+                    <button 
+                      style={styles.editButton}
+                      onClick={() => startEditUser(user)}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      style={styles.deleteButton}
+                      onClick={() => deleteUser(user.id)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <span style={{color: "#95a5a6", fontSize: "12px"}}>Protected</span>
+                )}
+              </div>
             </div>
-            <div style={styles.tableCell}>{user.farmSize || "N/A"}</div>
-            <div style={styles.tableCell}>
-              <button 
-                style={styles.editButton}
-                onClick={() => navigate(`/admin/edit-user/${user.id}`)}
-              >
-                Edit
-              </button>
-              <button 
-                style={styles.deleteButton}
-                onClick={() => deleteUser(user.id)}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+          )
         ))}
       </div>
     </div>
@@ -276,34 +442,91 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
         </div>
         
         {equipment.map(eq => (
-          <div key={eq.id} style={styles.tableRow}>
-            <div style={styles.tableCell}>{eq.name}</div>
-            <div style={styles.tableCell}>{eq.type}</div>
-            <div style={styles.tableCell}>{eq.ownerName}</div>
-            <div style={styles.tableCell}>₹{eq.pricePerDay}</div>
-            <div style={styles.tableCell}>
-              <span style={{
-                ...styles.statusBadge,
-                backgroundColor: eq.status === "available" ? "#4ecdc4" : "#ff6b6b"
-              }}>
-                {eq.status}
-              </span>
+          editingEquipment === eq.id ? (
+            // Edit Mode
+            <div key={eq.id} style={{...styles.tableRow, backgroundColor: "#f0f8ff"}}>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  value={editEquipmentForm.name} 
+                  onChange={(e) => setEditEquipmentForm({...editEquipmentForm, name: e.target.value})}
+                  style={styles.editInput}
+                  placeholder="Equipment Name"
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="text" 
+                  value={editEquipmentForm.description} 
+                  onChange={(e) => setEditEquipmentForm({...editEquipmentForm, description: e.target.value})}
+                  style={styles.editInput}
+                  placeholder="Type/Description"
+                />
+              </div>
+              <div style={styles.tableCell}>{eq.ownerName}</div>
+              <div style={styles.tableCell}>
+                <input 
+                  type="number" 
+                  value={editEquipmentForm.price} 
+                  onChange={(e) => setEditEquipmentForm({...editEquipmentForm, price: e.target.value})}
+                  style={styles.editInput}
+                  placeholder="Price per day"
+                />
+              </div>
+              <div style={styles.tableCell}>
+                <span style={{
+                  ...styles.statusBadge,
+                  backgroundColor: eq.status === "available" ? "#4ecdc4" : "#ff6b6b"
+                }}>
+                  {eq.status}
+                </span>
+              </div>
+              <div style={styles.tableCell}>
+                <button 
+                  style={styles.saveButton}
+                  onClick={() => saveEditEquipment(eq.id)}
+                >
+                  Save
+                </button>
+                <button 
+                  style={styles.cancelButton}
+                  onClick={cancelEditEquipment}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div style={styles.tableCell}>
-              <button 
-                style={styles.editButton}
-                onClick={() => navigate(`/admin/edit-equipment/${eq.id}`)}
-              >
-                Edit
-              </button>
-              <button 
-                style={styles.deleteButton}
-                onClick={() => deleteEquipment(eq.id)}
-              >
-                Delete
-              </button>
+          ) : (
+            // View Mode
+            <div key={eq.id} style={styles.tableRow}>
+              <div style={styles.tableCell}>{eq.name}</div>
+              <div style={styles.tableCell}>{eq.type}</div>
+              <div style={styles.tableCell}>{eq.ownerName}</div>
+              <div style={styles.tableCell}>₹{eq.pricePerDay}</div>
+              <div style={styles.tableCell}>
+                <span style={{
+                  ...styles.statusBadge,
+                  backgroundColor: eq.status === "available" ? "#4ecdc4" : "#ff6b6b"
+                }}>
+                  {eq.status}
+                </span>
+              </div>
+              <div style={styles.tableCell}>
+                <button 
+                  style={styles.editButton}
+                  onClick={() => startEditEquipment(eq)}
+                >
+                  Edit
+                </button>
+                <button 
+                  style={styles.deleteButton}
+                  onClick={() => deleteEquipment(eq.id)}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          </div>
+          )
         ))}
       </div>
     </div>
@@ -331,7 +554,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
           <div style={styles.tableHeaderCell}>Booking ID</div>
           <div style={styles.tableHeaderCell}>Equipment</div>
           <div style={styles.tableHeaderCell}>Renter</div>
-          <div style={styles.tableHeaderCell}>Owner</div>
+          <div style={styles.tableHeaderCell}>Accepted By</div>
           <div style={styles.tableHeaderCell}>Start Date</div>
           <div style={styles.tableHeaderCell}>Hours</div>
           <div style={styles.tableHeaderCell}>Status</div>
@@ -348,8 +571,8 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
               <div style={styles.subText}>{booking.renter?.phone || ""}</div>
             </div>
             <div style={styles.tableCell}>
-              <div>{booking.owner?.name || booking.acceptedOwner?.name || "N/A"}</div>
-              <div style={styles.subText}>{booking.owner?.phone || booking.acceptedOwner?.phone || ""}</div>
+              <div>{booking.acceptedOwner?.name || "Not Accepted"}</div>
+              <div style={styles.subText}>{booking.acceptedOwner?.phone || ""}</div>
             </div>
             <div style={styles.tableCell}>{booking.startDate}</div>
             <div style={styles.tableCell}>{booking.hours || "N/A"}</div>
@@ -631,6 +854,18 @@ const styles = {
     borderRadius: "4px",
     cursor: "pointer",
   },
+  bookingStats: {
+    display: "flex",
+    gap: "10px",
+  },
+  statBadge: {
+    padding: "6px 12px",
+    borderRadius: "12px",
+    backgroundColor: "#3498db",
+    color: "white",
+    fontSize: "12px",
+    fontWeight: "bold",
+  },
   table: {
     width: "100%",
   },
@@ -647,6 +882,11 @@ const styles = {
   },
   tableCell: {
     color: "#666",
+  },
+  subText: {
+    fontSize: "12px",
+    color: "#999",
+    marginTop: "4px",
   },
   roleBadge: {
     padding: "4px 8px",
@@ -680,6 +920,33 @@ const styles = {
     borderRadius: "4px",
     cursor: "pointer",
     fontSize: "12px",
+  },
+  saveButton: {
+    backgroundColor: "#27ae60",
+    color: "white",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    marginRight: "8px",
+    fontSize: "12px",
+  },
+  cancelButton: {
+    backgroundColor: "#95a5a6",
+    color: "white",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "12px",
+  },
+  editInput: {
+    width: "100%",
+    padding: "6px 8px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    fontSize: "13px",
+    boxSizing: "border-box",
   },
   comingSoon: {
     textAlign: "center",
