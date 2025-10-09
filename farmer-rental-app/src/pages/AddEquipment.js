@@ -12,7 +12,6 @@ export default function AddEquipment() {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    pricePerDay: "",
     pricePerHour: "",
     imageUrl: "",
   });
@@ -50,11 +49,15 @@ export default function AddEquipment() {
     
     console.log("🔄 Adding equipment with ownerId:", ownerId, "(farmerId:", farmerId, "userId:", userId, ")");
     
+    // Calculate daily price from hourly rate (hourly * 24)
+    const hourlyRate = Number(form.pricePerHour);
+    const dailyRate = hourlyRate * 24;
+    
     const payload = {
       name: form.name,
       description: form.description,
-      price: Number(form.pricePerDay), // per-day price expected as 'price'
-      pricePerHour: form.pricePerHour ? Number(form.pricePerHour) : null,
+      price: dailyRate, // daily price calculated from hourly rate
+      pricePerHour: hourlyRate,
       image: form.imageUrl,
     };
     
@@ -80,10 +83,8 @@ export default function AddEquipment() {
           value={form.name} onChange={handleChange} required style={styles.input}/>
         <textarea name="description" placeholder={t("addEquipment.fields.description")}
           value={form.description} onChange={handleChange} required style={styles.textarea}/>
-        <input type="number" name="pricePerDay" placeholder={t("addEquipment.fields.pricePerDay")}
-          value={form.pricePerDay} onChange={handleChange} required style={styles.input}/>
         <input type="number" name="pricePerHour" placeholder={t("addEquipment.fields.pricePerHour")}
-          value={form.pricePerHour} onChange={handleChange} style={styles.input}/>
+          value={form.pricePerHour} onChange={handleChange} required style={styles.input}/>
         <input type="text" name="imageUrl" placeholder={t("addEquipment.fields.imageUrl")}
           value={form.imageUrl} onChange={handleChange} required style={styles.input}/>
         <button type="submit" style={styles.button}>{t("addEquipment.button")}</button>

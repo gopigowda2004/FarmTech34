@@ -1241,23 +1241,45 @@ export default function Dashboard() {
                           )}
                         </div>
                         
-                        {/* Google Maps Integration for Owner */}
-                        {booking.locationLatitude && booking.locationLongitude && (
+                        {/* Map Directions for Owner */}
+                        {booking.locationLatitude && booking.locationLongitude && farmerData?.latitude && farmerData?.longitude && (
                           <div style={styles.mapContainer}>
-                            <h6 style={styles.mapTitle}>🗺️ Directions to Renter Location</h6>
-                            <iframe
-                              src={`https://www.google.com/maps/embed/v1/directions?key=YOUR_API_KEY&origin=Current Location&destination=${booking.locationLatitude},${booking.locationLongitude}&mode=driving`}
-                              style={styles.mapFrame}
-                              allowFullScreen=""
-                              loading="lazy"
-                              referrerPolicy="no-referrer-when-downgrade"
-                            />
+                            <h6 style={styles.mapTitle}>🗺️ Route to Renter Location</h6>
+                            <div style={styles.mapFrame}>
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                scrolling="no"
+                                marginHeight="0"
+                                marginWidth="0"
+                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Math.min(farmerData.longitude, booking.locationLongitude) - 0.05}%2C${Math.min(farmerData.latitude, booking.locationLatitude) - 0.05}%2C${Math.max(farmerData.longitude, booking.locationLongitude) + 0.05}%2C${Math.max(farmerData.latitude, booking.locationLatitude) + 0.05}&layer=mapnik&marker=${booking.locationLatitude}%2C${booking.locationLongitude}`}
+                                style={{ border: 0, borderRadius: "8px" }}
+                              />
+                            </div>
+                            <div style={styles.routeInfo}>
+                              <div style={styles.routePoint}>
+                                <span style={styles.routeIcon}>📍</span>
+                                <span style={styles.routeLabel}>Your Location</span>
+                              </div>
+                              <div style={styles.routeArrow}>→</div>
+                              <div style={styles.routePoint}>
+                                <span style={styles.routeIcon}>🎯</span>
+                                <span style={styles.routeLabel}>Renter Location</span>
+                              </div>
+                            </div>
                             <div style={styles.mapActions}>
                               <button 
                                 style={styles.openMapsBtn}
-                                onClick={() => window.open(`https://www.google.com/maps/dir/Current+Location/${booking.locationLatitude},${booking.locationLongitude}`, '_blank')}
+                                onClick={() => window.open(`https://www.google.com/maps/dir/${farmerData.latitude},${farmerData.longitude}/${booking.locationLatitude},${booking.locationLongitude}`, '_blank')}
                               >
                                 🚗 Open in Google Maps
+                              </button>
+                              <button 
+                                style={{...styles.openMapsBtn, background: "linear-gradient(90deg, #3b82f6, #2563eb)", boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"}}
+                                onClick={() => window.open(`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${farmerData.latitude}%2C${farmerData.longitude}%3B${booking.locationLatitude}%2C${booking.locationLongitude}`, '_blank')}
+                              >
+                                🗺️ Open in OpenStreetMap
                               </button>
                             </div>
                           </div>
@@ -1297,8 +1319,8 @@ export default function Dashboard() {
                           </h4>
                           
                           <div style={styles.bookingRequestDetails}>
-                            <div><strong>Owner:</strong> {booking.owner?.name}</div>
-                            <div><strong>Contact:</strong> {booking.owner?.phone}</div>
+                            <div><strong>Owner:</strong> {booking.acceptedOwner?.name || booking.owner?.name}</div>
+                            <div><strong>Contact:</strong> {booking.acceptedOwner?.phone || booking.owner?.phone}</div>
                             <div><strong>Start Date:</strong> {booking.startDate}</div>
                             <div><strong>Duration:</strong> {booking.hours} hours</div>
                             <div><strong>Total Amount:</strong> ₹{booking.hours * (booking.equipment?.pricePerHour || 0)}</div>
@@ -1315,7 +1337,7 @@ export default function Dashboard() {
                           </div>
                           <button 
                             style={styles.contactOwnerBtn}
-                            onClick={() => window.open(`tel:${booking.owner?.phone}`, '_self')}
+                            onClick={() => window.open(`tel:${booking.acceptedOwner?.phone || booking.owner?.phone}`, '_self')}
                           >
                             📞 Contact Owner
                           </button>
@@ -1402,7 +1424,7 @@ export default function Dashboard() {
                     <p style={styles.equipmentDesc}>{equipment.desc}</p>
                     <div style={styles.equipmentMeta}>
                       <span style={styles.equipmentPrice}>
-                        {t("common.priceDay").replace("{price}", equipment.price)}
+                        {t("common.priceDay").replace("{price}", equipment.pricePerHour || (equipment.price ? (equipment.price / 24).toFixed(2) : 0))}
                       </span>
                       <button style={styles.equipmentButton}>{t("btn.rentNow")}</button>
                     </div>
@@ -1461,13 +1483,14 @@ export default function Dashboard() {
                     />
                   </label>
                   <label style={styles.formField}>
-                    <span>Price per day (₹)</span>
+                    <span>Price per hour (₹/hr)</span>
                     <input
                       type="number"
                       name="price"
                       value={form.price}
                       onChange={handleChange}
                       required
+                      placeholder="Enter hourly rate"
                     />
                   </label>
                   <label style={styles.formField}>
@@ -1497,7 +1520,7 @@ export default function Dashboard() {
                     </div>
                     <div style={styles.inventoryMeta}>
                       <span style={styles.inventoryPrice}>
-                        {t("common.priceDay").replace("{price}", equipment.price)}
+                        {t("common.priceDay").replace("{price}", equipment.pricePerHour || (equipment.price ? (equipment.price / 24).toFixed(2) : 0))}
                       </span>
                       <button 
                         style={styles.deleteButton}
@@ -2691,5 +2714,73 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
+  },
+  // Map Styles
+  mapContainer: {
+    marginTop: "16px",
+    background: "rgba(15, 23, 42, 0.6)",
+    borderRadius: "12px",
+    padding: "16px",
+    border: "1px solid rgba(148, 163, 184, 0.2)",
+  },
+  mapTitle: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#e2e8f0",
+    marginBottom: "12px",
+    margin: "0 0 12px 0",
+  },
+  mapFrame: {
+    width: "100%",
+    height: "200px",
+    border: "none",
+    borderRadius: "8px",
+    marginBottom: "12px",
+  },
+  mapActions: {
+    display: "flex",
+    gap: "8px",
+    justifyContent: "center",
+  },
+  openMapsBtn: {
+    background: "linear-gradient(90deg, #10b981, #059669)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "10px 16px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+    flex: 1,
+  },
+  routeInfo: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "12px",
+    padding: "12px",
+    background: "rgba(59, 130, 246, 0.1)",
+    borderRadius: "8px",
+    marginBottom: "12px",
+  },
+  routePoint: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  routeIcon: {
+    fontSize: "16px",
+  },
+  routeLabel: {
+    fontSize: "13px",
+    color: "#cbd5e1",
+    fontWeight: "500",
+  },
+  routeArrow: {
+    fontSize: "18px",
+    color: "#3b82f6",
+    fontWeight: "bold",
   },
 };

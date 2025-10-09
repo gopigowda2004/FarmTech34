@@ -124,7 +124,7 @@ const AdminDashboard = () => {
     setEditEquipmentForm({
       name: eq.name,
       description: eq.description || "",
-      price: eq.pricePerDay || eq.price,
+      price: eq.pricePerHour || (eq.price ? eq.price / 24 : 0),
       image: eq.image || ""
     });
   };
@@ -138,11 +138,12 @@ const AdminDashboard = () => {
     try {
       const userId = localStorage.getItem("userId");
       const farmerId = localStorage.getItem("farmerId") || "1"; // Admin farmer ID
+      const pricePerHour = parseFloat(editEquipmentForm.price);
       const updateData = {
         name: editEquipmentForm.name,
         description: editEquipmentForm.description,
-        price: parseFloat(editEquipmentForm.price),
-        pricePerHour: parseFloat(editEquipmentForm.price) / 24,
+        price: pricePerHour * 24, // Calculate daily rate from hourly
+        pricePerHour: pricePerHour,
         image: editEquipmentForm.image
       };
       
@@ -164,12 +165,12 @@ const AdminDashboard = () => {
       const userId = localStorage.getItem("userId");
       const farmerId = localStorage.getItem("farmerId") || "1"; // Default admin farmer ID
       
-      const pricePerDay = parseFloat(equipmentForm.price);
+      const pricePerHour = parseFloat(equipmentForm.price);
       const equipmentData = {
         name: equipmentForm.name,
         description: equipmentForm.description,
-        price: pricePerDay,
-        pricePerHour: pricePerDay / 24, // Calculate hourly rate
+        price: pricePerHour * 24, // Calculate daily rate from hourly
+        pricePerHour: pricePerHour,
         image: equipmentForm.image
       };
       
@@ -436,7 +437,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
           <div style={styles.tableHeaderCell}>Name</div>
           <div style={styles.tableHeaderCell}>Type</div>
           <div style={styles.tableHeaderCell}>Owner</div>
-          <div style={styles.tableHeaderCell}>Price/Day</div>
+          <div style={styles.tableHeaderCell}>Price/Hour</div>
           <div style={styles.tableHeaderCell}>Status</div>
           <div style={styles.tableHeaderCell}>Actions</div>
         </div>
@@ -470,7 +471,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
                   value={editEquipmentForm.price} 
                   onChange={(e) => setEditEquipmentForm({...editEquipmentForm, price: e.target.value})}
                   style={styles.editInput}
-                  placeholder="Price per day"
+                  placeholder="Price per hour"
                 />
               </div>
               <div style={styles.tableCell}>
@@ -502,7 +503,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
               <div style={styles.tableCell}>{eq.name}</div>
               <div style={styles.tableCell}>{eq.type}</div>
               <div style={styles.tableCell}>{eq.ownerName}</div>
-              <div style={styles.tableCell}>₹{eq.pricePerDay}</div>
+              <div style={styles.tableCell}>₹{eq.pricePerHour || (eq.price ? (eq.price / 24).toFixed(2) : 0)}/hr</div>
               <div style={styles.tableCell}>
                 <span style={{
                   ...styles.statusBadge,
@@ -705,7 +706,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
               </div>
               
               <div style={styles.formGroup}>
-                <label style={styles.label}>Daily Rate (₹) *</label>
+                <label style={styles.label}>Hourly Rate (₹/hour) *</label>
                 <input
                   type="number"
                   name="price"
@@ -715,6 +716,7 @@ Created: ${booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "N
                   min="0"
                   step="0.01"
                   required
+                  placeholder="Enter price per hour"
                 />
               </div>
               

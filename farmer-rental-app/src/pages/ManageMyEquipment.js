@@ -105,8 +105,8 @@ export default function ManageMyEquipment() {
           it.description.toLowerCase().includes(search.toLowerCase())
       );
     }
-    if (sort === "lowPrice") list.sort((a, b) => a.price - b.price);
-    if (sort === "highPrice") list.sort((a, b) => b.price - a.price);
+    if (sort === "lowPrice") list.sort((a, b) => (a.pricePerHour || a.price / 24) - (b.pricePerHour || b.price / 24));
+    if (sort === "highPrice") list.sort((a, b) => (b.pricePerHour || b.price / 24) - (a.pricePerHour || a.price / 24));
     return list;
   }, [items, search, sort]);
 
@@ -254,14 +254,8 @@ export default function ManageMyEquipment() {
                 <div style={newStyles.pricingSection}>
                   <div style={newStyles.priceContainer}>
                     <span style={newStyles.priceLabel}>Per Hour</span>
-                    <span style={newStyles.priceValue}>₹{equipment.pricePerHour || equipment.price}</span>
+                    <span style={newStyles.priceValue}>₹{equipment.pricePerHour || (equipment.price ? (equipment.price / 24).toFixed(2) : 0)}</span>
                   </div>
-                  {equipment.price && equipment.pricePerHour && (
-                    <div style={newStyles.priceContainer}>
-                      <span style={newStyles.priceLabel}>Per Day</span>
-                      <span style={newStyles.priceValue}>₹{equipment.price}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Stats */}

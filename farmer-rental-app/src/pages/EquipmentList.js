@@ -61,7 +61,7 @@ export default function EquipmentsList() {
             <img src={eq.image} alt={eq.name} width="100" />
             <h3>{eq.name}</h3>
             <p>{eq.description}</p>
-            <p>{t("common.priceDay").replace("{price}", eq.price)}</p>
+            <p>{t("common.priceDay").replace("{price}", eq.pricePerHour || (eq.price ? (eq.price / 24).toFixed(2) : 0))}</p>
             <p><strong>{t("common.owner")}:</strong> {eq.owner?.name}</p>
             <p><strong>{t("common.contact")}:</strong> {eq.owner?.phone}</p>
             <button onClick={() => {
@@ -91,7 +91,8 @@ export default function EquipmentsList() {
               })
                 .then(() => {
                   console.log("✅ Booking created, navigating to checkout");
-                  navigate(`/checkout?equipmentId=${eq.id}&start=${startDateOnly}&hours=${hours}&price=${eq.price}`);
+                  const hourlyPrice = eq.pricePerHour || (eq.price ? (eq.price / 24).toFixed(2) : 0);
+                  navigate(`/checkout?equipmentId=${eq.id}&start=${startDateOnly}&hours=${hours}&price=${hourlyPrice}`);
                 })
                 .catch((err) => {
                   console.error("❌ Failed to create booking:", err?.response?.data || err.message);

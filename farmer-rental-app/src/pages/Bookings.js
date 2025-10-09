@@ -208,7 +208,9 @@ export default function Bookings() {
     const startDateOnly = start.toISOString().slice(0, 10);
 
     // Forward the equipment id and optional pricing details to checkout
-    navigate(`/checkout?equipmentId=${chosenEquipment.id}&start=${startDateOnly}&hours=${hoursNum}&price=${chosenEquipment.price ?? chosenEquipment.pricePerHour ?? ""}&location=${encodeURIComponent(locationText)}`);
+    // Use pricePerHour as primary, calculate from price if needed
+    const hourlyPrice = chosenEquipment.pricePerHour ?? (chosenEquipment.price ? (chosenEquipment.price / 24).toFixed(2) : "");
+    navigate(`/checkout?equipmentId=${chosenEquipment.id}&start=${startDateOnly}&hours=${hoursNum}&price=${hourlyPrice}&location=${encodeURIComponent(locationText)}`);
   };
 
   if (loading) return <div style={styles.page}>{t("common.loading")}</div>;

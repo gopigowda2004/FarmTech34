@@ -10,5 +10,5 @@ UNION ALL
 SELECT 'Farmers count:' as info, COUNT(*) as count FROM farmers
 UNION ALL
 SELECT 'Equipment count:' as info, COUNT(*) as count FROM equipments
-UNION ALL
+UNION ALL 
 SELECT 'Bookings count:' as info, COUNT(*) as count FROM bookings;

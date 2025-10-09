@@ -197,7 +197,7 @@ function Equipments() {
                   <div style={styles.pricingSection}>
                     <div style={styles.priceContainer}>
                       <span style={styles.priceLabel}>Per Hour</span>
-                      <span style={styles.priceValue}>₹{equipment.pricePerHour || equipment.price}</span>
+                      <span style={styles.priceValue}>₹{equipment.pricePerHour || (equipment.price ? (equipment.price / 24).toFixed(2) : 0)}</span>
                     </div>
                     <div style={styles.ratingContainer}>
                       <span style={styles.stars}>⭐⭐⭐⭐⭐</span>
