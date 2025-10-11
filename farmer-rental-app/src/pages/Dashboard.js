@@ -4,6 +4,7 @@ import axios from "axios";
 import { useI18n } from "../i18n/i18n";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import NotificationSystem from "../components/NotificationSystem";
+import AIChatbot from "../components/AIChatbot";
 import api from "../api/axiosInstance";
 import { isAdminUser, checkAdminStatus } from "../utils/adminUtils";
 
@@ -24,46 +25,24 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [loginTimestamp, setLoginTimestamp] = useState(localStorage.getItem("loginTimestamp"));
-  const [equipments, setEquipments] = useState([
-    {
-      name: "Power Weeder",
-      desc: "Used for soil preparation and weeding",
-      price: 1200,
-      image: "https://cdn-icons-png.flaticon.com/512/7431/7431830.png",
-    },
-    {
-      name: "Brush Cutter",
-      desc: "Cutting weeds and small bushes",
-      price: 800,
-      image: "https://cdn-icons-png.flaticon.com/512/3131/3131624.png",
-    },
-    {
-      name: "Power Reaper",
-      desc: "Efficient harvesting of crops",
-      price: 1800,
-      image: "https://cdn-icons-png.flaticon.com/512/7431/7431819.png",
-    },
-    {
-      name: "Rotary Tiller",
-      desc: "HD / HS Multispeed tiller",
-      price: 1500,
-      image: "https://cdn-icons-png.flaticon.com/512/4324/4324492.png",
-    },
-  ]);
+  const [equipments, setEquipments] = useState([]);
 
   // Fetch pending booking invitations for current user (owner view)
   const fetchPendingBookings = async () => {
     const farmerId = localStorage.getItem("farmerId");
+    const userId = localStorage.getItem("userId");
     const role = localStorage.getItem("userRole");
     
     if (!farmerId) {
-      console.log("No farmerId found, skipping pending bookings fetch");
+      console.log("❌ No farmerId found in localStorage, skipping pending bookings fetch");
+      console.log("   userId:", userId, "role:", role);
+      console.log("   This usually means the Farmer record wasn't created during registration/login");
       return;
     }
 
     setLoadingBookings(true);
     console.log("=== FETCHING PENDING BOOKINGS ===");
-    console.log("FarmerId:", farmerId, "Role:", role);
+    console.log("FarmerId:", farmerId, "UserId:", userId, "Role:", role);
     
     try {
       // For owners, fetch pending invitations (bookings they can accept)
@@ -255,7 +234,8 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching equipments:", error);
-      // Keep default equipments if API fails
+      // Show empty list if API fails
+      setEquipments([]);
     }
   };
 
@@ -414,9 +394,9 @@ export default function Dashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Only ADMIN can add equipment
-    if (!isAdmin || userRole !== "ADMIN") {
-      alert("❌ Only administrators can add equipment.");
+    // Only ADMIN and OWNER can add equipment
+    if (!isAdmin && userRole !== "OWNER") {
+      alert("❌ Only administrators and equipment owners can add equipment.");
       return;
     }
     
@@ -862,6 +842,9 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {/* AI Chatbot Assistant */}
+        <AIChatbot />
+
         {activeTab === "dashboard" && (
           <>
             {/* Role-specific Hero Section */}
@@ -1035,22 +1018,37 @@ export default function Dashboard() {
                 ) : (
                   <div style={styles.noBookingsMessage}>
                     <div style={styles.noBookingsIcon}>📋</div>
-                    <h4 style={styles.noBookingsTitle}>No pending booking requests</h4>
+                    <h4 style={styles.noBookingsTitle}>
+                      {!localStorage.getItem("farmerId") ? 
+                        "⚠️ Profile Setup Required" : 
+                        "No pending booking requests"
+                      }
+                    </h4>
                     <p style={styles.noBookingsText}>
-                      {userRole === "OWNER" ? 
-                        "When renters book your equipment, their requests will appear here for you to accept." :
-                        "Booking requests from renters will appear here when they need your equipment."
+                      {!localStorage.getItem("farmerId") ? 
+                        "Your owner profile is not fully set up. Please update your profile with your location to start receiving booking requests." :
+                        userRole === "OWNER" ? 
+                          "When renters book your equipment, their requests will appear here for you to accept." :
+                          "Booking requests from renters will appear here when they need your equipment."
                       }
                     </p>
                     <div style={styles.noBookingsActions}>
-                      {userRole === "ADMIN" && (
-                        <button style={styles.addEquipmentBtn} onClick={handleAddEquipmentClick}>
-                          🛠️ Add Equipment
+                      {!localStorage.getItem("farmerId") ? (
+                        <button style={styles.addEquipmentBtn} onClick={() => navigate("/profile")}>
+                          📝 Update Profile
                         </button>
+                      ) : (
+                        <>
+                          {userRole === "ADMIN" && (
+                            <button style={styles.addEquipmentBtn} onClick={handleAddEquipmentClick}>
+                              🛠️ Add Equipment
+                            </button>
+                          )}
+                          <button style={styles.refreshBtn} onClick={fetchPendingBookings}>
+                            ↻ Check Again
+                          </button>
+                        </>
                       )}
-                      <button style={styles.refreshBtn} onClick={fetchPendingBookings}>
-                        ↻ Check Again
-                      </button>
                     </div>
                   </div>
                 )}
@@ -1242,45 +1240,48 @@ export default function Dashboard() {
                         </div>
                         
                         {/* Map Directions for Owner */}
-                        {booking.locationLatitude && booking.locationLongitude && farmerData?.latitude && farmerData?.longitude && (
+                        {(() => {
+                          // Debug logging for map display
+                          console.log('=== MAP DEBUG FOR BOOKING #' + booking.id + ' ===');
+                          console.log('Booking location (address):', booking.location);
+                          console.log('FarmerData (Your) latitude:', farmerData?.latitude);
+                          console.log('FarmerData (Your) longitude:', farmerData?.longitude);
+                          console.log('Can show map:', !!(booking.location && farmerData?.latitude && farmerData?.longitude));
+                          return null;
+                        })()}
+                        {booking.location && farmerData?.latitude && farmerData?.longitude ? (
                           <div style={styles.mapContainer}>
-                            <h6 style={styles.mapTitle}>🗺️ Route to Renter Location</h6>
-                            <div style={styles.mapFrame}>
-                              <iframe
-                                width="100%"
-                                height="100%"
-                                frameBorder="0"
-                                scrolling="no"
-                                marginHeight="0"
-                                marginWidth="0"
-                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Math.min(farmerData.longitude, booking.locationLongitude) - 0.05}%2C${Math.min(farmerData.latitude, booking.locationLatitude) - 0.05}%2C${Math.max(farmerData.longitude, booking.locationLongitude) + 0.05}%2C${Math.max(farmerData.latitude, booking.locationLatitude) + 0.05}&layer=mapnik&marker=${booking.locationLatitude}%2C${booking.locationLongitude}`}
-                                style={{ border: 0, borderRadius: "8px" }}
-                              />
-                            </div>
-                            <div style={styles.routeInfo}>
-                              <div style={styles.routePoint}>
-                                <span style={styles.routeIcon}>📍</span>
-                                <span style={styles.routeLabel}>Your Location</span>
+                            <h6 style={styles.mapTitle}>🗺️ Get Directions to Renter</h6>
+                            <div style={styles.mapDirectionsCard}>
+                              <div style={styles.routeInfo}>
+                                <div style={styles.routePoint}>
+                                  <span style={styles.routeIcon}>📍</span>
+                                  <span style={styles.routeLabel}>Your Location</span>
+                                </div>
+                                <div style={styles.routeArrow}>→</div>
+                                <div style={styles.routePoint}>
+                                  <span style={styles.routeIcon}>🎯</span>
+                                  <span style={styles.routeLabel}>Renter: {booking.location}</span>
+                                </div>
                               </div>
-                              <div style={styles.routeArrow}>→</div>
-                              <div style={styles.routePoint}>
-                                <span style={styles.routeIcon}>🎯</span>
-                                <span style={styles.routeLabel}>Renter Location</span>
-                              </div>
+                              <button 
+                                style={styles.googleMapsBtn}
+                                onClick={() => window.open(`https://www.google.com/maps/dir/${farmerData.latitude},${farmerData.longitude}/${encodeURIComponent(booking.location)}`, '_blank')}
+                              >
+                                🗺️ Open Google Maps Navigation
+                              </button>
                             </div>
-                            <div style={styles.mapActions}>
-                              <button 
-                                style={styles.openMapsBtn}
-                                onClick={() => window.open(`https://www.google.com/maps/dir/${farmerData.latitude},${farmerData.longitude}/${booking.locationLatitude},${booking.locationLongitude}`, '_blank')}
-                              >
-                                🚗 Open in Google Maps
-                              </button>
-                              <button 
-                                style={{...styles.openMapsBtn, background: "linear-gradient(90deg, #3b82f6, #2563eb)", boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)"}}
-                                onClick={() => window.open(`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${farmerData.latitude}%2C${farmerData.longitude}%3B${booking.locationLatitude}%2C${booking.locationLongitude}`, '_blank')}
-                              >
-                                🗺️ Open in OpenStreetMap
-                              </button>
+                          </div>
+                        ) : (
+                          <div style={styles.mapPlaceholder}>
+                            <div style={styles.mapPlaceholderIcon}>📍</div>
+                            <div style={styles.mapPlaceholderText}>
+                              <strong>Map directions unavailable</strong>
+                              <p>
+                                {!booking.location 
+                                  ? "Renter's location address is missing" 
+                                  : "Your location coordinates are missing. Please update your profile with your address."}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1342,6 +1343,40 @@ export default function Dashboard() {
                             📞 Contact Owner
                           </button>
                         </div>
+                        
+                        {/* Map Directions to Owner for Renter */}
+                        {booking.acceptedOwner?.latitude && booking.acceptedOwner?.longitude && booking.location ? (
+                          <div style={styles.mapContainer}>
+                            <h6 style={styles.mapTitle}>🗺️ Owner's Location</h6>
+                            <div style={styles.mapDirectionsCard}>
+                              <div style={styles.routeInfo}>
+                                <div style={styles.routePoint}>
+                                  <span style={styles.routeIcon}>📍</span>
+                                  <span style={styles.routeLabel}>Your Location: {booking.location}</span>
+                                </div>
+                                <div style={styles.routeArrow}>→</div>
+                                <div style={styles.routePoint}>
+                                  <span style={styles.routeIcon}>🎯</span>
+                                  <span style={styles.routeLabel}>Owner Location</span>
+                                </div>
+                              </div>
+                              <button 
+                                style={styles.googleMapsBtn}
+                                onClick={() => window.open(`https://www.google.com/maps/dir/${encodeURIComponent(booking.location)}/${booking.acceptedOwner.latitude},${booking.acceptedOwner.longitude}`, '_blank')}
+                              >
+                                🗺️ Open Google Maps to Owner
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={styles.mapPlaceholder}>
+                            <div style={styles.mapPlaceholderIcon}>📍</div>
+                            <div style={styles.mapPlaceholderText}>
+                              <strong>Map to owner unavailable</strong>
+                              <p>Owner's location coordinates are not available</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -2730,30 +2765,28 @@ const styles = {
     marginBottom: "12px",
     margin: "0 0 12px 0",
   },
-  mapFrame: {
+  mapDirectionsCard: {
+    background: "rgba(59, 130, 246, 0.05)",
+    borderRadius: "10px",
+    padding: "16px",
+    border: "1px solid rgba(59, 130, 246, 0.2)",
+  },
+  googleMapsBtn: {
     width: "100%",
-    height: "200px",
-    border: "none",
-    borderRadius: "8px",
-    marginBottom: "12px",
-  },
-  mapActions: {
-    display: "flex",
-    gap: "8px",
-    justifyContent: "center",
-  },
-  openMapsBtn: {
-    background: "linear-gradient(90deg, #10b981, #059669)",
+    background: "linear-gradient(90deg, #4285f4, #34a853)",
     color: "#fff",
     border: "none",
     borderRadius: "8px",
-    padding: "10px 16px",
-    fontSize: "13px",
+    padding: "14px 20px",
+    fontSize: "15px",
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
-    boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
-    flex: 1,
+    boxShadow: "0 4px 12px rgba(66, 133, 244, 0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
   },
   routeInfo: {
     display: "flex",
@@ -2763,7 +2796,7 @@ const styles = {
     padding: "12px",
     background: "rgba(59, 130, 246, 0.1)",
     borderRadius: "8px",
-    marginBottom: "12px",
+    marginBottom: "16px",
   },
   routePoint: {
     display: "flex",
@@ -2782,5 +2815,23 @@ const styles = {
     fontSize: "18px",
     color: "#3b82f6",
     fontWeight: "bold",
+  },
+  mapPlaceholder: {
+    background: "rgba(249, 115, 22, 0.1)",
+    border: "2px dashed rgba(249, 115, 22, 0.3)",
+    borderRadius: "12px",
+    padding: "24px",
+    marginTop: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  },
+  mapPlaceholderIcon: {
+    fontSize: "48px",
+    opacity: 0.5,
+  },
+  mapPlaceholderText: {
+    flex: 1,
+    color: "#cbd5e1",
   },
 };

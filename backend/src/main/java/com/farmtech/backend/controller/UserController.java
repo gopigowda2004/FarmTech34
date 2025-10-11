@@ -76,18 +76,55 @@ public class UserController {
             }
             
             User user = existingUser.get();
-            user.setName(updatedUser.getName());
-            user.setEmail(updatedUser.getEmail());
-            user.setPhone(updatedUser.getPhone());
-            user.setRole(updatedUser.getRole());
-            user.setAddress(updatedUser.getAddress());
-            user.setDistrict(updatedUser.getDistrict());
-            user.setState(updatedUser.getState());
-            user.setPincode(updatedUser.getPincode());
-            user.setFarmSize(updatedUser.getFarmSize());
-            user.setCropType(updatedUser.getCropType());
-            user.setExperience(updatedUser.getExperience());
-            user.setEquipmentOwned(updatedUser.getEquipmentOwned());
+            
+            // Update basic fields
+            if (updatedUser.getName() != null) {
+                user.setName(updatedUser.getName());
+            }
+            if (updatedUser.getEmail() != null) {
+                user.setEmail(updatedUser.getEmail());
+            }
+            if (updatedUser.getPhone() != null) {
+                user.setPhone(updatedUser.getPhone());
+            }
+            if (updatedUser.getRole() != null) {
+                user.setRole(updatedUser.getRole());
+            }
+            if (updatedUser.getAddress() != null) {
+                user.setAddress(updatedUser.getAddress());
+            }
+            if (updatedUser.getDistrict() != null) {
+                user.setDistrict(updatedUser.getDistrict());
+            }
+            if (updatedUser.getState() != null) {
+                user.setState(updatedUser.getState());
+            }
+            if (updatedUser.getPincode() != null) {
+                user.setPincode(updatedUser.getPincode());
+            }
+            if (updatedUser.getFarmSize() != null) {
+                user.setFarmSize(updatedUser.getFarmSize());
+            }
+            if (updatedUser.getCropType() != null) {
+                user.setCropType(updatedUser.getCropType());
+            }
+            if (updatedUser.getExperience() != null) {
+                user.setExperience(updatedUser.getExperience());
+            }
+            if (updatedUser.getEquipmentOwned() != null) {
+                user.setEquipmentOwned(updatedUser.getEquipmentOwned());
+            }
+            
+            // Update location coordinates
+            if (updatedUser.getLatitude() != null) {
+                user.setLatitude(updatedUser.getLatitude());
+            }
+            if (updatedUser.getLongitude() != null) {
+                user.setLongitude(updatedUser.getLongitude());
+            }
+            if (updatedUser.getVillage() != null) {
+                user.setVillage(updatedUser.getVillage());
+            }
             
             User saved = userService.saveUser(user);
             return ResponseEntity.ok(saved);

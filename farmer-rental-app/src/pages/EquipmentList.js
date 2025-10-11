@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../api/axiosInstance";
 import { useI18n } from "../i18n/i18n";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import AIChatbot from "../components/AIChatbot";
 import { useNavigate } from "react-router-dom";
 
 export default function EquipmentsList() {
@@ -102,6 +103,9 @@ export default function EquipmentsList() {
           </div>
         ))}
       </div>
+      
+      {/* AI Chatbot Assistant */}
+      <AIChatbot />
     </div>
   );
 }

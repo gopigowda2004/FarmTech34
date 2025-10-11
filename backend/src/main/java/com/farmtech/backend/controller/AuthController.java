@@ -72,16 +72,24 @@ public class AuthController {
         Long farmerId = null;
         if ("OWNER".equals(role) || "ADMIN".equals(role)) {
             // Check if farmer already exists
-            if (!farmerRepository.findByPhone(phone).isPresent()) {
+            Optional<Farmer> existingFarmer = farmerRepository.findByPhone(phone);
+            if (existingFarmer.isPresent()) {
+                farmerId = existingFarmer.get().getId();
+                System.out.println("✅ Found existing Farmer ID: " + farmerId + " for OWNER registration");
+            } else {
                 Farmer farmer = new Farmer();
                 farmer.setName(name);
                 farmer.setEmail(email);
                 farmer.setPhone(phone);
                 farmer.setPassword(password);
                 farmer.setAddress((String) request.get("address"));
+                // Initialize coordinates to 0.0 so they can be updated later via profile
+                farmer.setLatitude(0.0);
+                farmer.setLongitude(0.0);
                 
                 Farmer savedFarmer = farmerRepository.save(farmer);
                 farmerId = savedFarmer.getId();
+                System.out.println("✅ Created new Farmer ID: " + farmerId + " for OWNER registration");
             }
         }
         
@@ -135,6 +143,22 @@ public class AuthController {
                 if (farmerOpt.get().getAddress() != null) {
                     farmerAddress = farmerOpt.get().getAddress();
                 }
+                System.out.println("✅ Login: Found Farmer ID " + farmerId + " for user " + user.getName());
+            } else if ("OWNER".equals(user.getRole()) || "ADMIN".equals(user.getRole())) {
+                // Auto-create Farmer record for OWNER/ADMIN users who don't have one
+                System.out.println("⚠️ Login: OWNER/ADMIN user has no Farmer record, creating one...");
+                Farmer newFarmer = new Farmer();
+                newFarmer.setName(user.getName());
+                newFarmer.setEmail(user.getEmail());
+                newFarmer.setPhone(user.getPhone());
+                newFarmer.setPassword(user.getPassword());
+                newFarmer.setAddress(user.getAddress());
+                newFarmer.setLatitude(0.0);
+                newFarmer.setLongitude(0.0);
+                
+                Farmer savedFarmer = farmerRepository.save(newFarmer);
+                farmerId = savedFarmer.getId();
+                System.out.println("✅ Login: Created Farmer ID " + farmerId + " for OWNER user " + user.getName());
             }
             
             Map<String, Object> response = new HashMap<>();
@@ -147,6 +171,8 @@ public class AuthController {
             response.put("address", farmerAddress);
             response.put("role", user.getRole() != null ? user.getRole() : "USER");
             response.put("isAdmin", "ADMIN".equals(user.getRole()));
+            
+            System.out.println("✅ Login response: userId=" + user.getId() + ", farmerId=" + farmerId + ", role=" + user.getRole());
             
             return ResponseEntity.ok(response);
         }

@@ -21,6 +21,8 @@ public class Farmer {
     private String phone;
 
     private String address;
+    
+    private String village;
 
     @Column(name = "latitude")
     private Double latitude;
@@ -69,6 +71,13 @@ public class Farmer {
     }
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getVillage() {
+        return village;
+    }
+    public void setVillage(String village) {
+        this.village = village;
     }
 
     public Double getLatitude() {

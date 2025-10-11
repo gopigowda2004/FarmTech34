@@ -26,6 +26,7 @@ public class Equipment {
     @Column(name = "price")
     private Double legacyPrice;
 
+    @Column(length = 1000) // Allow longer image URLs
     private String image;
 
     @ManyToOne

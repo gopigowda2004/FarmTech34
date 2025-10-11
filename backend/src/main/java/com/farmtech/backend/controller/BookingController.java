@@ -63,8 +63,13 @@ public class BookingController {
                                  @RequestParam(required = false) String endDate,
                                  @RequestParam(required = false) Integer hours,
                                  @RequestParam(required = false) String location,
-                                 @RequestParam(required = false) Double locationLat,
-                                 @RequestParam(required = false) Double locationLng) {
+                                 @RequestParam(required = false) Double locationLatitude,
+                                 @RequestParam(required = false) Double locationLongitude) {
+        System.out.println("📍 CREATE BOOKING - Received coordinates:");
+        System.out.println("   locationLatitude: " + locationLatitude);
+        System.out.println("   locationLongitude: " + locationLongitude);
+        System.out.println("   location: " + location);
+        
         Equipment equipment = equipmentRepo.findById(equipmentId)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
         
@@ -121,15 +126,23 @@ public class BookingController {
         if (location != null && !location.trim().isEmpty()) {
             booking.setLocation(location.trim());
         }
-        if (locationLat != null && locationLng != null) {
-            booking.setLocationLatitude(locationLat);
-            booking.setLocationLongitude(locationLng);
+        if (locationLatitude != null && locationLongitude != null) {
+            System.out.println("✅ Setting coordinates on booking object:");
+            System.out.println("   Latitude: " + locationLatitude);
+            System.out.println("   Longitude: " + locationLongitude);
+            booking.setLocationLatitude(locationLatitude);
+            booking.setLocationLongitude(locationLongitude);
+        } else {
+            System.out.println("⚠️ Coordinates are NULL - not setting on booking");
         }
         
         // Set the created timestamp
         booking.setCreatedAt(LocalDateTime.now());
         
         Booking saved = bookingRepo.save(booking);
+        System.out.println("💾 Booking saved with ID: " + saved.getId());
+        System.out.println("   Saved latitude: " + saved.getLocationLatitude());
+        System.out.println("   Saved longitude: " + saved.getLocationLongitude());
 
         // create candidate list for other nearby owners
         createCandidateEntries(saved);

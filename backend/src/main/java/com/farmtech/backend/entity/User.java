@@ -36,6 +36,15 @@ public class User {
     private String equipmentOwned; // e.g. Tractor, Rotavator
 
     private String role; // FARMER, RENTER, ADMIN
+    
+    // Location coordinates for Google Maps navigation
+    @Column(name = "latitude")
+    private Double latitude;
+    
+    @Column(name = "longitude")
+    private Double longitude;
+    
+    private String village;
 
     public User() {}
 
@@ -113,4 +122,13 @@ public class User {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    
+    public String getVillage() { return village; }
+    public void setVillage(String village) { this.village = village; }
 }

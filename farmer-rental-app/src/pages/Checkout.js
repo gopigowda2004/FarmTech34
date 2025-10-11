@@ -19,6 +19,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [locationText, setLocationText] = useState(locationParam || "");
+  const [locationCoords, setLocationCoords] = useState({ latitude: null, longitude: null });
   const [gettingLocation, setGettingLocation] = useState(false);
 
   const farmerId = localStorage.getItem("farmerId");
@@ -171,16 +172,57 @@ export default function Checkout() {
   const pricePerHour = useMemo(() => equipment?.pricePerHour ?? null, [equipment]);
   const totalPrice = useMemo(() => (pricePerHour ? Math.round(pricePerHour * hours) : null), [pricePerHour, hours]);
 
-  // Reverse-geocode coordinates to a readable address
+  // Reverse-geocode coordinates to a readable address with full details
   const reverseGeocode = async (latitude, longitude) => {
     try {
       const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch address");
       const data = await res.json();
-      const parts = [data.locality || data.city, data.principalSubdivision, data.countryName].filter(Boolean);
-      return parts.join(", ") || `${latitude}, ${longitude}`;
+      
+      // Debug: Log the full response to see what's available
+      console.log('🗺️ Full geocode response:', data);
+      
+      // Extract administrative levels (most specific to least specific)
+      const admin = data.localityInfo?.administrative || [];
+      
+      // Build address from most specific to general, avoiding duplicates
+      const addressComponents = [];
+      
+      // Try to get sub-locality/area (usually at index 4 or 3)
+      const subLocality = admin[4]?.name || admin[3]?.name;
+      if (subLocality && subLocality !== data.city && subLocality !== data.locality) {
+        addressComponents.push(subLocality);
+      }
+      
+      // Add city/locality
+      if (data.locality || data.city) {
+        addressComponents.push(data.locality || data.city);
+      }
+      
+      // Add pincode if available
+      if (data.postcode) {
+        addressComponents.push(data.postcode);
+      }
+      
+      // Add state
+      if (data.principalSubdivision) {
+        addressComponents.push(data.principalSubdivision);
+      }
+      
+      // Add country
+      if (data.countryName) {
+        addressComponents.push(data.countryName);
+      }
+      
+      const formattedAddress = addressComponents.join(", ");
+      
+      console.log('📍 Extracted address parts:', addressComponents);
+      console.log('✅ Final formatted address:', formattedAddress);
+      
+      return formattedAddress || `${latitude}, ${longitude}`;
     } catch (e) {
+      console.error('❌ Geocode error:', e);
       return `${latitude}, ${longitude}`; // fallback
     }
   };
@@ -223,12 +265,15 @@ export default function Checkout() {
       const { latitude, longitude } = pos.coords;
       const address = await reverseGeocode(latitude, longitude);
       setLocationText(address);
+      setLocationCoords({ latitude, longitude }); // Save coordinates
+      console.log('✅ Location captured:', { latitude, longitude, address });
     } catch (err) {
       // Fallback to IP-based city/region
       const ipAddr = await ipGeocode();
       if (ipAddr) {
         alert('Could not get precise location. Using approximate city from IP.');
         setLocationText(ipAddr);
+        setLocationCoords({ latitude: null, longitude: null }); // Clear coords for IP-based location
       } else {
         alert(`Failed to get location: ${err.message || err}`);
       }
@@ -297,8 +342,18 @@ export default function Checkout() {
                 alert("Please provide a location or use current location.");
                 return;
               }
+              
+              console.log("🚀 Navigating to Payment with:", {
+                locationText,
+                locationLatitude: locationCoords.latitude,
+                locationLongitude: locationCoords.longitude
+              });
               navigate(`/payment?equipmentId=${equipmentId}&start=${start}&hours=${hours}&price=${price}`, {
-                state: { locationText },
+                state: { 
+                  locationText,
+                  locationLatitude: locationCoords.latitude,
+                  locationLongitude: locationCoords.longitude
+                },
               });
             }}
           >

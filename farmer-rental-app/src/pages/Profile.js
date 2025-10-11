@@ -40,14 +40,42 @@ export default function Profile() {
     setEditForm({});
     
     if (profileId) {
-      axios
-        .get(`http://localhost:8090/api/farmers/profile/${profileId}`)
-        .then((res) => {
-          console.log("✅ Profile fetched for:", res.data?.name);
-          setFarmer(res.data);
-          setEditForm(res.data);
-        })
-        .catch((err) => console.error("❌ Error fetching profile:", err));
+      // Try Users API first (new system), fallback to Farmers API (legacy)
+      const fetchProfile = async () => {
+        try {
+          let response;
+          if (currentUserId) {
+            // New system - fetch from Users API
+            console.log("📡 Fetching from Users API for userId:", currentUserId);
+            response = await axios.get(`http://localhost:8090/api/users/${currentUserId}`);
+          } else if (currentFarmerId) {
+            // Legacy system - fetch from Farmers API
+            console.log("📡 Fetching from Farmers API for farmerId:", currentFarmerId);
+            response = await axios.get(`http://localhost:8090/api/farmers/profile/${currentFarmerId}`);
+          }
+          
+          if (response && response.data) {
+            console.log("✅ Profile fetched for:", response.data?.name);
+            setFarmer(response.data);
+            setEditForm(response.data);
+          }
+        } catch (err) {
+          console.error("❌ Error fetching profile:", err);
+          // Try fallback to Farmers API if Users API fails
+          if (currentUserId && currentFarmerId) {
+            try {
+              console.log("🔄 Trying fallback to Farmers API...");
+              const fallbackResponse = await axios.get(`http://localhost:8090/api/farmers/profile/${currentFarmerId}`);
+              setFarmer(fallbackResponse.data);
+              setEditForm(fallbackResponse.data);
+            } catch (fallbackErr) {
+              console.error("❌ Fallback also failed:", fallbackErr);
+            }
+          }
+        }
+      };
+      
+      fetchProfile();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginTimestamp]);
@@ -69,13 +97,29 @@ export default function Profile() {
       }
       
       console.log("💾 Saving profile for profileId:", profileId, "(farmerId:", farmerId, "userId:", userId, ")");
+      console.log("📤 Profile data being saved:", editForm);
       
-      await axios.put(`http://localhost:8090/api/farmers/profile/${profileId}`, editForm);
-      setFarmer(editForm);
-      setIsEditing(false);
-      alert("✅ Profile updated successfully!");
+      // Use the correct API based on which ID we have
+      let response;
+      if (userId) {
+        // New system - save to Users API
+        console.log("💾 Saving to Users API for userId:", userId);
+        response = await axios.put(`http://localhost:8090/api/users/${userId}`, editForm);
+      } else if (farmerId) {
+        // Legacy system - save to Farmers API
+        console.log("💾 Saving to Farmers API for farmerId:", farmerId);
+        response = await axios.put(`http://localhost:8090/api/farmers/profile/${farmerId}`, editForm);
+      }
+      
+      if (response && response.data) {
+        console.log("✅ Profile saved successfully:", response.data);
+        setFarmer(response.data);
+        setIsEditing(false);
+        alert("✅ Profile updated successfully!");
+      }
     } catch (error) {
       console.error("❌ Error updating profile:", error);
+      console.error("Error details:", error.response?.data || error.message);
       alert("❌ Failed to update profile. Please try again.");
     }
   };
@@ -247,6 +291,96 @@ export default function Profile() {
                 <p style={styles.detailValue}>{farmer.village}</p>
               )}
             </div>
+          </div>
+
+          {/* Location Coordinates Section */}
+          <div style={styles.locationSection}>
+            <div style={styles.locationHeader}>
+              <div style={styles.detailIcon}>🗺️</div>
+              <div>
+                <label style={styles.detailLabel}>Location Coordinates</label>
+                <p style={styles.locationHint}>
+                  {userRole === "OWNER" 
+                    ? "Required for Google Maps directions when accepting bookings"
+                    : "Used to help owners find your location for equipment delivery"}
+                </p>
+              </div>
+            </div>
+            
+            {isEditing && (
+              <button
+                type="button"
+                style={styles.locationButton}
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        handleEditChange('latitude', position.coords.latitude);
+                        handleEditChange('longitude', position.coords.longitude);
+                        alert(`✅ Location captured!\nLatitude: ${position.coords.latitude}\nLongitude: ${position.coords.longitude}`);
+                      },
+                      (error) => {
+                        console.error("Error getting location:", error);
+                        alert("❌ Could not get your location. Please enable location access in your browser settings or enter coordinates manually.");
+                      }
+                    );
+                  } else {
+                    alert("❌ Geolocation is not supported by your browser. Please enter coordinates manually.");
+                  }
+                }}
+              >
+                📍 Use Current Location
+              </button>
+            )}
+
+            <div style={styles.coordinatesGrid}>
+              <div style={styles.coordinateField}>
+                <label style={styles.coordinateLabel}>Latitude</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    style={styles.editInput}
+                    value={editForm.latitude || ''}
+                    onChange={(e) => handleEditChange('latitude', parseFloat(e.target.value))}
+                    placeholder="e.g., 12.9716"
+                  />
+                ) : (
+                  <p style={styles.detailValue}>
+                    {farmer.latitude ? farmer.latitude : <span style={styles.missingValue}>Not set</span>}
+                  </p>
+                )}
+              </div>
+
+              <div style={styles.coordinateField}>
+                <label style={styles.coordinateLabel}>Longitude</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    style={styles.editInput}
+                    value={editForm.longitude || ''}
+                    onChange={(e) => handleEditChange('longitude', parseFloat(e.target.value))}
+                    placeholder="e.g., 77.5946"
+                  />
+                ) : (
+                  <p style={styles.detailValue}>
+                    {farmer.longitude ? farmer.longitude : <span style={styles.missingValue}>Not set</span>}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {!isEditing && farmer.latitude && farmer.longitude && (
+              <a
+                href={`https://www.google.com/maps?q=${farmer.latitude},${farmer.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.viewMapLink}
+              >
+                🗺️ View on Google Maps
+              </a>
+            )}
           </div>
 
           <div style={styles.detailRow}>
@@ -485,6 +619,95 @@ const styles = {
     color: '#1f2937',
     fontWeight: '500',
     margin: '0',
+  },
+  locationSection: {
+    padding: '20px',
+    background: '#f0fdf4',
+    borderRadius: '12px',
+    border: '2px solid #86efac',
+    marginTop: '10px',
+  },
+  locationHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '15px',
+    marginBottom: '15px',
+  },
+  locationHint: {
+    fontSize: '13px',
+    color: '#059669',
+    margin: '5px 0 0 0',
+    fontStyle: 'italic',
+  },
+  locationButton: {
+    width: '100%',
+    padding: '12px 20px',
+    background: 'linear-gradient(135deg, #10b981, #059669)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '10px',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginBottom: '15px',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+  },
+  coordinatesGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '15px',
+  },
+  coordinateField: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  coordinateLabel: {
+    fontSize: '12px',
+    color: '#059669',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '8px',
+  },
+  missingValue: {
+    color: '#dc2626',
+    fontStyle: 'italic',
+    fontSize: '14px',
+  },
+  viewMapLink: {
+    display: 'inline-block',
+    marginTop: '15px',
+    padding: '10px 20px',
+    background: '#fff',
+    color: '#059669',
+    textDecoration: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    border: '2px solid #86efac',
+    transition: 'all 0.3s ease',
+  },
+  editInput: {
+    width: '100%',
+    padding: '10px 15px',
+    fontSize: '16px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '8px',
+    outline: 'none',
+    transition: 'all 0.3s ease',
+    fontFamily: 'inherit',
+  },
+  editTextarea: {
+    width: '100%',
+    padding: '10px 15px',
+    fontSize: '16px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '8px',
+    outline: 'none',
+    transition: 'all 0.3s ease',
+    fontFamily: 'inherit',
+    resize: 'vertical',
   },
   statsContainer: {
     display: 'grid',

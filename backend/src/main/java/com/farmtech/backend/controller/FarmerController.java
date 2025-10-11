@@ -33,4 +33,43 @@ public class FarmerController {
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(404).body("Farmer not found for this email"));
     }
+
+    // ✅ Update farmer profile by ID
+    @PutMapping("/profile/{id}")
+    public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody Farmer updatedFarmer) {
+        Optional<Farmer> existingFarmer = farmerRepository.findById(id);
+        
+        if (existingFarmer.isPresent()) {
+            Farmer farmer = existingFarmer.get();
+            
+            // Update fields
+            if (updatedFarmer.getName() != null) {
+                farmer.setName(updatedFarmer.getName());
+            }
+            if (updatedFarmer.getEmail() != null) {
+                farmer.setEmail(updatedFarmer.getEmail());
+            }
+            if (updatedFarmer.getPhone() != null) {
+                farmer.setPhone(updatedFarmer.getPhone());
+            }
+            if (updatedFarmer.getAddress() != null) {
+                farmer.setAddress(updatedFarmer.getAddress());
+            }
+            if (updatedFarmer.getVillage() != null) {
+                farmer.setVillage(updatedFarmer.getVillage());
+            }
+            // Update location coordinates
+            if (updatedFarmer.getLatitude() != null) {
+                farmer.setLatitude(updatedFarmer.getLatitude());
+            }
+            if (updatedFarmer.getLongitude() != null) {
+                farmer.setLongitude(updatedFarmer.getLongitude());
+            }
+            
+            Farmer savedFarmer = farmerRepository.save(farmer);
+            return ResponseEntity.ok(savedFarmer);
+        }
+        
+        return ResponseEntity.status(404).body("Farmer not found");
+    }
 }

@@ -15,6 +15,15 @@ export default function Payment() {
   const hours = Number(searchParams.get("hours"));
   const price = Number(searchParams.get("price"));
   const locationText = location.state?.locationText || "";
+  const locationLatitude = location.state?.locationLatitude || null;
+  const locationLongitude = location.state?.locationLongitude || null;
+  
+  console.log("📍 Payment page received location data:", {
+    locationText,
+    locationLatitude,
+    locationLongitude,
+    fullState: location.state
+  });
 
   const [equipment, setEquipment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -116,10 +125,26 @@ export default function Payment() {
       }
       
       console.log("🔄 Creating booking with renterId:", renterId, "(farmerId:", farmerId, "userId:", userId, ")");
-      console.log("📦 Booking params:", { equipmentId, renterId, startDate: start, hours, location: locationText });
+      console.log("📦 Booking params:", { 
+        equipmentId, 
+        renterId, 
+        startDate: start, 
+        hours, 
+        location: locationText,
+        locationLatitude,
+        locationLongitude
+      });
       
       await api.post(`/bookings/create`, null, {
-        params: { equipmentId, renterId, startDate: start, hours, location: locationText },
+        params: { 
+          equipmentId, 
+          renterId, 
+          startDate: start, 
+          hours, 
+          location: locationText,
+          locationLatitude,
+          locationLongitude
+        },
       });
       
       console.log("✅ Booking created successfully!");
